@@ -3,6 +3,8 @@ import json
 import firebase_admin
 from firebase_admin import credentials, db
 
+st.write("DB URL is:", st.secrets["firebase_db_url"])
+
 # --- Initialise Firebase ---
 if not firebase_admin._apps:
     cred = credentials.Certificate(json.loads(st.secrets["firebase_creds"]))
