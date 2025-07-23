@@ -2,10 +2,14 @@ import streamlit as st
 import json
 import firebase_admin
 from firebase_admin import credentials, db
-from datetime import datetime
+from datetime import datetime, timedelta
+from streamlit_autorefresh import st_autorefresh
 
 # --- Page Config ---
 st.set_page_config(page_title="Barber Queue", layout="wide")
+
+# --- Auto-refresh every 20s (only on kiosk mode, not when submitting forms) ---
+st_autorefresh(interval=20 * 1000, limit=None, key="kiosk_refresh")
 
 # --- Initialise Firebase ---
 if not firebase_admin._apps:
@@ -15,18 +19,18 @@ if not firebase_admin._apps:
     })
 
 walkin_ref = db.reference('walkins')
+avg_cut_duration = 25  # minutes
 
 st.title("💈 Live Barber Queue Tracker")
 
 # --- Admin Mode Toggle ---
 is_admin = st.checkbox("🔐 Barber/Admin Mode")
 
-# --- Walk-in Form (hidden in admin mode) ---
+# --- Walk-in Form ---
 if not is_admin:
     with st.form("walkin_form"):
-        name = st.text_input("Enter your name to join the queue:", placeholder="e.g. Ali", label_visibility="visible")
+        name = st.text_input("Enter your name to join the queue:", placeholder="e.g. Ali")
         submit = st.form_submit_button("➕ Join Queue")
-
         if submit and name.strip():
             walkin_ref.push({
                 "name": name.strip().title(),
@@ -37,23 +41,29 @@ if not is_admin:
 
 st.divider()
 
-# --- Queue Display ---
+# --- Display Queue ---
 st.subheader("📋 Current Walk-ins")
 
 walkins = walkin_ref.get()
 
 if walkins:
     sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
+    current_time = datetime.now()
 
-    for i, (key, person) in enumerate(sorted_walkins, 1):
+    for i, (key, person) in enumerate(sorted_walkins, 0):
+        wait_minutes = avg_cut_duration * i
+        wait_time = (current_time + timedelta(minutes=wait_minutes)).strftime("%H:%M")
+
         col1, col2 = st.columns([5, 1])
         with col1:
-            st.markdown(f"### {i}. {person['name']} &nbsp;&nbsp;🕒 {person['joined_at'][11:16]}")
+            st.markdown(
+                f"### {i+1}. {person['name']} &nbsp;&nbsp;🕒 Est. at: {wait_time} &nbsp;&nbsp;({wait_minutes} min wait)"
+            )
         with col2:
             if is_admin:
                 if st.button("✅ Done", key=f"done_{key}", use_container_width=True):
                     walkin_ref.child(key).delete()
                     st.success(f"{person['name']} marked as done.")
-                    st.experimental_rerun()
+                    st.rerun()
 else:
     st.info("No one is in the queue yet.")
