@@ -33,7 +33,7 @@ if not is_admin:
                 "joined_at": datetime.now().isoformat()
             })
             st.success(f"You're in the queue, {name.strip().title()}!")
-            st.experimental_rerun()
+            st.rerun()
 
 st.divider()
 
