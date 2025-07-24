@@ -3,6 +3,7 @@ import json
 import firebase_admin
 from firebase_admin import credentials, db
 from datetime import datetime, timedelta
+from streamlit_autorefresh import st_autorefresh
 import pytz
 
 # --- Firebase init (singleton) ---
@@ -18,6 +19,14 @@ close_time = datetime.now().replace(hour=18, minute=0, second=0, microsecond=0)
 
 st.set_page_config(page_title="Book Appointment", layout="centered")
 st.title("📅 Book an Appointment")
+
+if "booking_confirmation" in st.session_state:
+    msg = st.session_state["booking_confirmation"]
+    st.success(
+        f"✅ {msg['name']}, your appointment at **{msg['time']}** has been booked!"
+    )
+    if st_autorefresh(interval=20_000, limit=1, key="clear_booking_confirm"):
+        del st.session_state["booking_confirmation"]
 
 # --- Get existing walk-ins and bookings ---
 now = datetime.now()
@@ -70,7 +79,11 @@ if available_slots:
                 "slot": selected_time.isoformat()
             })
 
-            st.success(f"✅ Booking confirmed for {name.strip().title()} at {chosen_slot}")
+            st.session_state["booking_confirmation ✅ "] = {
+                "name": name,
+                "time": selected_time.strftime('%H:%M')
+            }
             st.rerun()
+
 else:
     st.info("🕒 No appointment slots available today.")
