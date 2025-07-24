@@ -22,7 +22,7 @@ st.title("📅 Book an Appointment")
 
 if "booking_confirmation" in st.session_state:
     msg = st.session_state["booking_confirmation"]
-    appt_time = datetime.strptime(msg['datetime'], '%Y-%m-%dT%H:%M:%S')
+    appt_time = datetime.strptime(msg['datetime'], )
     now = datetime.now()
     time_diff = appt_time - now
 
@@ -96,7 +96,7 @@ if available_slots:
 
             st.session_state["booking_confirmation"] = {
                 "name": name.strip().title(),
-                "datetime": selected_time.strftime('%Y-%m-%dT%H:%M:%S')
+                "datetime": selected_time.strftime()
             }
             st.rerun()
 
