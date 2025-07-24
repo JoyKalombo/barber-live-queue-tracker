@@ -22,9 +22,24 @@ st.title("📅 Book an Appointment")
 
 if "booking_confirmation" in st.session_state:
     msg = st.session_state["booking_confirmation"]
+    appt_time = datetime.strptime(msg['datetime'], '%Y-%m-%dT%H:%M:%S')
+    now = datetime.now()
+    time_diff = appt_time - now
+
+    # Build countdown string
+    if time_diff.total_seconds() > 0:
+        hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
+        minutes = remainder // 60
+        countdown = f"in {hours}h {minutes}m" if hours > 0 else f"in {minutes} minutes"
+    else:
+        countdown = "starting now!"
+
     st.success(
-        f"✅ {msg['name']}, your appointment at **{msg['time']}** has been booked!"
+        f"✅ {msg['name']}, your appointment is booked!\n\n"
+        f"📅 **{appt_time.strftime('%A, %d %B %Y')}**\n"
+        f"🕒 **{appt_time.strftime('%H:%M')}** ({countdown})"
     )
+
     if st_autorefresh(interval=20_000, limit=1, key="clear_booking_confirm"):
         del st.session_state["booking_confirmation"]
 
@@ -80,8 +95,8 @@ if available_slots:
             })
 
             st.session_state["booking_confirmation"] = {
-                "name": name,
-                "time": selected_time.strftime('%H:%M')
+                "name": name.strip().title(),
+                "datetime": selected_time.strftime('%Y-%m-%dT%H:%M:%S')
             }
             st.rerun()
 
