@@ -28,12 +28,12 @@ if "confirmation_message" in st.session_state:
         f"⏳ Est. wait: **{m['wait']} mins**\n"
         f"🕒 Est. time: **{m['time']}**"
     )
-    # Optional: clear after 1 auto-refresh cycle (e.g. 20s)
-    if st_autorefresh(interval=20_000, limit=1, key="clear_confirmation"):
+    # Only run one refresh with a separate key
+    if st_autorefresh(interval=20_000, limit=1, key="clear_confirmation_refresh"):
         del st.session_state["confirmation_message"]
 else:
-    # Regular auto-refresh
-    st_autorefresh(interval=20_000, limit=None, key="kiosk_refresh")
+    # Standard recurring refresh
+    st_autorefresh(interval=20_000, limit=None, key="regular_kiosk_refresh")
 
 st.info("Add your FULL NAME to join the queue. Names are hidden for privacy. Only the Barber can see your name.")
 
