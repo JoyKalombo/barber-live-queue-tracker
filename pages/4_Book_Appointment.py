@@ -15,7 +15,7 @@ walkin_ref = db.reference("walkins")
 booking_ref = db.reference("bookings")
 avg_cut_duration = 25  # in minutes
 open_time = datetime.now().replace(hour=10, minute=0, second=0, microsecond=0)
-close_time = datetime.now().replace(hour=18, minute=0, second=0, microsecond=0)
+close_time = datetime.now().replace(hour=22, minute=0, second=0, microsecond=0)
 
 st.set_page_config(page_title="Book Appointment", layout="centered")
 st.title("📅 Book an Appointment")
