@@ -96,7 +96,7 @@ if available_slots:
 
             st.session_state["booking_confirmation"] = {
                 "name": name.strip().title(),
-                "datetime": selected_time.strftime()
+                "datetime": selected_time.isoformat()
             }
             st.rerun()
 
