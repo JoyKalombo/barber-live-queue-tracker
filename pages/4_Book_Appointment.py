@@ -79,7 +79,7 @@ if available_slots:
                 "slot": selected_time.isoformat()
             })
 
-            st.session_state["booking_confirmation ✅ "] = {
+            st.session_state["booking_confirmation"] = {
                 "name": name,
                 "time": selected_time.strftime('%H:%M')
             }
