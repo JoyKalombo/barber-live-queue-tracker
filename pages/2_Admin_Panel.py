@@ -17,6 +17,39 @@ avg_cut_duration = 25
 now = datetime.now()
 st.set_page_config(page_title="Admin Panel", layout="wide")
 
+# --- CSV Export Section ---
+st.divider()
+st.subheader("📁 Export Logs")
+
+# Button to export today's queue
+if st.button("⬇️ Export Today's Log as CSV"):
+    try:
+        # Get today's logs
+        date_today = datetime.now().strftime("%Y-%m-%d")
+        log_ref = db.reference(f"logs/{date_today}")
+        logs = log_ref.get()
+
+        if logs:
+            # Convert to DataFrame
+            df_logs = pd.DataFrame.from_dict(logs, orient="index")
+            df_logs["joined_at"] = pd.to_datetime(df_logs["joined_at"])
+            df_logs = df_logs.sort_values("joined_at")
+            df_logs["joined_at"] = df_logs["joined_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+            # Generate CSV
+            csv_buffer = StringIO()
+            df_logs.to_csv(csv_buffer, index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv_buffer.getvalue(),
+                file_name=f"queue_log_{date_today}.csv",
+                mime="text/csv"
+            )
+        else:
+            st.info("ℹ️ No logs found for today.")
+    except Exception as e:
+        st.error(f"⚠️ Failed to export logs: {str(e)}")
+
 if "confirmation_message" in st.session_state:
     m = st.session_state["confirmation_message"]
     st.success(
