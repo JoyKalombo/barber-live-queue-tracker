@@ -17,54 +17,6 @@ avg_cut_duration = 25
 now = datetime.now()
 st.set_page_config(page_title="Admin Panel", layout="wide")
 
-# --- CSV Export Section ---
-st.divider()
-st.subheader("📁 Export Logs")
-
-# Button to export today's queue
-if st.button("⬇️ Export Today's Log as CSV"):
-    try:
-        # Get today's logs
-        date_today = datetime.now().strftime("%Y-%m-%d")
-        log_ref = db.reference(f"logs/{date_today}")
-        logs = log_ref.get()
-
-        if logs:
-            # Convert to DataFrame
-            df_logs = pd.DataFrame.from_dict(logs, orient="index")
-            df_logs["joined_at"] = pd.to_datetime(df_logs["joined_at"])
-            df_logs = df_logs.sort_values("joined_at")
-            df_logs["joined_at"] = df_logs["joined_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
-
-            # Generate CSV
-            csv_buffer = StringIO()
-            df_logs.to_csv(csv_buffer, index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=csv_buffer.getvalue(),
-                file_name=f"queue_log_{date_today}.csv",
-                mime="text/csv"
-            )
-        else:
-            st.info("ℹ️ No logs found for today.")
-    except Exception as e:
-        st.error(f"⚠️ Failed to export logs: {str(e)}")
-
-if "confirmation_message" in st.session_state:
-    m = st.session_state["confirmation_message"]
-    st.success(
-        f"✅ {m['name']}, you've been added to the queue!\n\n"
-        f"You're number **{m['position']}** in line.\n"
-        f"⏳ Est. wait: **{m['wait']} mins**\n"
-        f"🕒 Est. time: **{m['time']}**"
-    )
-    # Only run one refresh with a separate key
-    if st_autorefresh(interval=20_000, limit=1, key="clear_confirmation_refresh"):
-        del st.session_state["confirmation_message"]
-else:
-    # Standard recurring refresh
-    st_autorefresh(interval=20_000, limit=None, key="regular_kiosk_refresh")
-
 # --- Session state login ---
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
@@ -87,6 +39,7 @@ if st.button("🚪 Logout"):
     st.session_state["is_admin"] = False
     st.rerun()
 
+# --- Queue Display & Remove Logic ---
 walkins = walkin_ref.get()
 if walkins:
     sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
@@ -109,3 +62,32 @@ if walkins:
                 st.rerun()
 else:
     st.info("No one is in the queue yet.")
+
+# --- CSV Export Section (admin-only) ---
+st.divider()
+st.subheader("📁 Export Logs")
+
+if st.button("⬇️ Export Today's Log as CSV"):
+    try:
+        date_today = datetime.now().strftime("%Y-%m-%d")
+        log_ref = db.reference(f"logs/{date_today}")
+        logs = log_ref.get()
+
+        if logs:
+            df_logs = pd.DataFrame.from_dict(logs, orient="index")
+            df_logs["joined_at"] = pd.to_datetime(df_logs["joined_at"])
+            df_logs = df_logs.sort_values("joined_at")
+            df_logs["joined_at"] = df_logs["joined_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+            csv_buffer = StringIO()
+            df_logs.to_csv(csv_buffer, index=False)
+            st.download_button(
+                label="📥 Download CSV",
+                data=csv_buffer.getvalue(),
+                file_name=f"queue_log_{date_today}.csv",
+                mime="text/csv"
+            )
+        else:
+            st.info("ℹ️ No logs found for today.")
+    except Exception as e:
+        st.error(f"⚠️ Failed to export logs: {str(e)}")
