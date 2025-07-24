@@ -89,6 +89,23 @@ if queue_sorted:
                 f"🕒 Wait: {max(wait_mins, 0)} mins  \n"
                 f"📅 Est: {person['start'].strftime('%H:%M')} – {end_time.strftime('%H:%M')}"
             )
+        with col2:
+            if st.button("✅ Done", key=f"remove_{i}"):
+                # Remove from appropriate Firebase reference
+                if person["source"] == "walkin":
+                    # Find and delete walk-in
+                    for key, p in walkins.items():
+                        if p["name"] == person["name"]:
+                            walkin_ref.child(key).delete()
+                            break
+                else:
+                    # Find and delete booking
+                    for key, p in bookings.items():
+                        if p["name"] == person["name"] and p["slot"] == person["start"].isoformat():
+                            booking_ref.child(key).delete()
+                            break
+                st.rerun()
+
 else:
     st.info("No one is in the queue yet.")
 
