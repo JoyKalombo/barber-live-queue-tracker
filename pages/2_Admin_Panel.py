@@ -3,6 +3,9 @@ import json
 import firebase_admin
 from firebase_admin import credentials, db
 from datetime import datetime, timedelta
+from streamlit_autorefresh import st_autorefresh
+import pandas as pd
+from io import StringIO
 
 # --- Firebase init ---
 if not firebase_admin._apps:
@@ -13,6 +16,21 @@ walkin_ref = db.reference("walkins")
 avg_cut_duration = 25
 now = datetime.now()
 st.set_page_config(page_title="Admin Panel", layout="wide")
+
+if "confirmation_message" in st.session_state:
+    m = st.session_state["confirmation_message"]
+    st.success(
+        f"✅ {m['name']}, you've been added to the queue!\n\n"
+        f"You're number **{m['position']}** in line.\n"
+        f"⏳ Est. wait: **{m['wait']} mins**\n"
+        f"🕒 Est. time: **{m['time']}**"
+    )
+    # Only run one refresh with a separate key
+    if st_autorefresh(interval=20_000, limit=1, key="clear_confirmation_refresh"):
+        del st.session_state["confirmation_message"]
+else:
+    # Standard recurring refresh
+    st_autorefresh(interval=20_000, limit=None, key="regular_kiosk_refresh")
 
 # --- Session state login ---
 if "is_admin" not in st.session_state:

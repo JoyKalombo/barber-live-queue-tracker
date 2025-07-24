@@ -24,8 +24,8 @@ if "confirmation_message" in st.session_state:
     m = st.session_state["confirmation_message"]
     st.success(
         f"✅ {m['name']}, you've been added to the queue!\n\n"
-        f"You're number **{m['position']}** in line.\n"
-        f"⏳ Est. wait: **{m['wait']} mins**\n"
+        f"You're number **{m['position']}** in line.\n\n"
+        f"⏳ Est. wait: **{m['wait']} mins**\n\n"
         f"🕒 Est. time: **{m['time']}**"
     )
     # Only run one refresh with a separate key
