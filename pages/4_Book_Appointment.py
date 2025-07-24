@@ -22,7 +22,7 @@ st.title("📅 Book an Appointment")
 
 if "booking_confirmation" in st.session_state:
     msg = st.session_state["booking_confirmation"]
-    appt_time = datetime.strptime(msg['datetime'], )
+    appt_time = datetime.fromisoformat(msg['datetime'])
     now = datetime.now()
     time_diff = appt_time - now
 
