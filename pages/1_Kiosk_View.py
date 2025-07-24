@@ -18,7 +18,24 @@ st.set_page_config(page_title="Kiosk View", layout="wide")
 st_autorefresh(interval=20_000, limit=None, key="kiosk_refresh")
 
 st.title("💈 Queue Tracker – Kiosk View")
-st.info("Add your FULL NAME to join the queue. Names are hidden for privacy. Only the Barber can see for identification purposes")
+
+# --- Show confirmation if in session ---
+if "confirmation_message" in st.session_state:
+    m = st.session_state["confirmation_message"]
+    st.success(
+        f"✅ {m['name']}, you've been added to the queue!\n\n"
+        f"You're number **{m['position']}** in line.\n"
+        f"⏳ Est. wait: **{m['wait']} mins**\n"
+        f"🕒 Est. time: **{m['time']}**"
+    )
+    # Optional: clear after 1 auto-refresh cycle (e.g. 20s)
+    if st_autorefresh(interval=20_000, limit=1, key="clear_confirmation"):
+        del st.session_state["confirmation_message"]
+else:
+    # Regular auto-refresh
+    st_autorefresh(interval=20_000, limit=None, key="kiosk_refresh")
+
+st.info("Add your FULL NAME to join the queue. Names are hidden for privacy. Only the Barber can see your name.")
 
 # --- Retrieve current queue (with error fallback) ---
 try:
@@ -41,17 +58,32 @@ with st.form("add_name_form"):
 
         if already_in_queue:
             st.warning(f"⚠️ {name_clean}, you're already in the queue!")
-        else:
+            else:
+            # Push to main walk-ins list
             walkin_ref.push({
                 "name": name_clean,
                 "joined_at": now.isoformat()
             })
-            position = len(sorted_walkins) + 1
+
+            # Also log to date-based logs
+            date_today = datetime.now().strftime("%Y-%m-%d")
+            log_ref = db.reference(f"logs/{date_today}")
+            log_ref.push({
+                "name": name_clean,
+                "joined_at": now.isoformat()
+            })
+
+        position = len(sorted_walkins) + 1
             est_start = now + timedelta(minutes=avg_cut_duration * (position - 1))
             est_wait = avg_cut_duration * (position - 1)
-            st.success(f"✅ Added! You're number {position} in the queue.\n"
-                       f"⏳ Est. wait: {est_wait} mins\n"
-                       f"🕒 Est. time: {est_start.strftime('%H:%M')}")
+            # Store confirmation in session_state
+            st.session_state["confirmation_message"] = {
+                "name": name_clean,
+                "position": "you are numner " + position + " in the queue",
+                "wait ⏳": est_wait + "minutes",
+                "time 🕒": est_start.strftime('%H:%M')
+            }
+            st.experimental_set_query_params(added="1")  # dummy param to avoid refresh loop
             st.rerun()
 
 st.divider()
