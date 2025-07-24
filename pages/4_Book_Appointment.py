@@ -20,85 +20,78 @@ close_time = datetime.now().replace(hour=18, minute=0, second=0, microsecond=0)
 st.set_page_config(page_title="Book Appointment", layout="centered")
 st.title("📅 Book an Appointment")
 
-if "booking_confirmation" in st.session_state:
-    msg = st.session_state["booking_confirmation"]
-    appt_time = datetime.fromisoformat(msg['datetime'])
-    now = datetime.now()
-    time_diff = appt_time - now
-
-    # Build countdown string
-    if time_diff.total_seconds() > 0:
-        hours, remainder = divmod(int(time_diff.total_seconds()), 3600)
-        minutes = remainder // 60
-        countdown = f"in {hours}h {minutes}m" if hours > 0 else f"in {minutes} minutes"
-    else:
-        countdown = "starting now!"
-
-    st.success(
-        f"✅ {msg['name']}, your appointment is booked!\n\n"
-        f"📅 **{appt_time.strftime('%A, %d %B %Y')}**\n"
-        f"🕒 **{appt_time.strftime('%H:%M')}** ({countdown})"
-    )
-
-    if st_autorefresh(interval=20_000, limit=1, key="clear_booking_confirm"):
-        del st.session_state["booking_confirmation"]
-
-# --- Get existing walk-ins and bookings ---
-now = datetime.now()
-walkins = walkin_ref.get() or {}
-bookings = booking_ref.get() or {}
-
-sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
-sorted_bookings = sorted(bookings.items(), key=lambda x: x[1]["slot"])
-
-# --- Generate blocked time ranges ---
-blocked_slots = []
-
-# Block out walk-ins sequentially from open_time
-walkin_start = open_time
-for _ in sorted_walkins:
-    blocked_slots.append((walkin_start, walkin_start + timedelta(minutes=avg_cut_duration)))
-    walkin_start += timedelta(minutes=avg_cut_duration)
-
-# Block out fixed bookings
-for _, b in sorted_bookings:
-    slot_time = datetime.fromisoformat(b["slot"])
-    blocked_slots.append((slot_time, slot_time + timedelta(minutes=avg_cut_duration)))
-
-# --- Generate all possible slots ---
-available_slots = []
-slot = open_time
-while slot + timedelta(minutes=avg_cut_duration) <= close_time:
-    overlap = any(
-        bs <= slot < be or (slot <= bs < slot + timedelta(minutes=avg_cut_duration))
-        for bs, be in blocked_slots
-    )
-    if not overlap:
-        available_slots.append(slot)
-    slot += timedelta(minutes=avg_cut_duration)
+# Add this near the top with the other now-related variables
+today = datetime.now().date()
 
 # --- Booking Form ---
-if available_slots:
-    with st.form("booking_form"):
-        name = st.text_input("Enter your full name:")
-        chosen_slot = st.selectbox("Pick an available time:", [s.strftime('%H:%M') for s in available_slots])
-        submit = st.form_submit_button("📥 Confirm Booking")
+st.subheader("🗓️ Select Date for Booking")
+selected_date = st.date_input("Pick a date:", min_value=today)
 
-        if submit and name.strip():
-            # Parse slot back to datetime
-            selected_time = next(s for s in available_slots if s.strftime('%H:%M') == chosen_slot)
+# Only show time slots if a date is selected
+if selected_date:
+    # Adjust open/close time for selected day
+    open_time = datetime.combine(selected_date, datetime.min.time()).replace(hour=10)
+    close_time = datetime.combine(selected_date, datetime.min.time()).replace(hour=18)
 
-            # Save to Firebase
-            booking_ref.push({
-                "name": name.strip().title(),
-                "slot": selected_time.isoformat()
-            })
+    now = datetime.now()
+    walkins = walkin_ref.get() or {}
+    bookings = booking_ref.get() or {}
 
-            st.session_state["booking_confirmation"] = {
-                "name": name.strip().title(),
-                "datetime": selected_time.isoformat()
-            }
-            st.rerun()
+    sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
+    sorted_bookings = sorted(bookings.items(), key=lambda x: x[1]["slot"])
 
-else:
-    st.info("🕒 No appointment slots available today.")
+    # --- Generate blocked time ranges ---
+    blocked_slots = []
+
+    # Block out walk-ins only if selected_date is today
+    if selected_date == today:
+        walkin_start = open_time
+        for _ in sorted_walkins:
+            blocked_slots.append((walkin_start, walkin_start + timedelta(minutes=avg_cut_duration)))
+            walkin_start += timedelta(minutes=avg_cut_duration)
+
+    # Block out bookings on selected date
+    for _, b in sorted_bookings:
+        slot_dt = datetime.fromisoformat(b["slot"])
+        if slot_dt.date() == selected_date:
+            blocked_slots.append((slot_dt, slot_dt + timedelta(minutes=avg_cut_duration)))
+
+    # --- Generate available slots ---
+    available_slots = []
+    slot = open_time
+    while slot + timedelta(minutes=avg_cut_duration) <= close_time:
+        if selected_date == today and slot < now:
+            slot += timedelta(minutes=avg_cut_duration)
+            continue
+        overlap = any(bs <= slot < be or (slot <= bs < slot + timedelta(minutes=avg_cut_duration))
+                      for bs, be in blocked_slots)
+        if not overlap:
+            available_slots.append(slot)
+        slot += timedelta(minutes=avg_cut_duration)
+
+    # --- Booking Form ---
+    if available_slots:
+        with st.form("booking_form"):
+            name = st.text_input("Enter your full name:")
+            chosen_slot = st.selectbox(
+                "Pick an available time:",
+                [s.strftime('%H:%M') for s in available_slots]
+            )
+            submit = st.form_submit_button("📥 Confirm Booking")
+
+            if submit and name.strip():
+                selected_time = next(s for s in available_slots if s.strftime('%H:%M') == chosen_slot)
+
+                # Save to Firebase
+                booking_ref.push({
+                    "name": name.strip().title(),
+                    "slot": selected_time.isoformat()
+                })
+
+                st.session_state["booking_confirmation"] = {
+                    "name": name.strip().title(),
+                    "datetime": selected_time.isoformat()
+                }
+                st.rerun()
+    else:
+        st.info("🕒 No appointment slots available for this date.")
