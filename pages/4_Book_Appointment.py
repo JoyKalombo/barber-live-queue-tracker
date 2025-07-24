@@ -71,6 +71,6 @@ if available_slots:
             })
 
             st.success(f"✅ Booking confirmed for {name.strip().title()} at {chosen_slot}")
-            st.experimental_rerun()
+            st.rerun()
 else:
     st.info("🕒 No appointment slots available today.")
