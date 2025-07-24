@@ -13,8 +13,11 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred, {'databaseURL': st.secrets["firebase_db_url"]})
 
 walkin_ref = db.reference("walkins")
-avg_cut_duration = 25
+booking_ref = db.reference("bookings")
+avg_cut_duration = 25  # in minutes
 now = datetime.now()
+open_time = now.replace(hour=10, minute=0, second=0, microsecond=0)
+
 st.set_page_config(page_title="Admin Panel", layout="wide")
 
 # --- Session state login ---
@@ -39,31 +42,57 @@ if st.button("🚪 Logout"):
     st.session_state["is_admin"] = False
     st.rerun()
 
-# --- Queue Display & Remove Logic ---
-walkins = walkin_ref.get()
-if walkins:
-    sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
-    for i, (key, person) in enumerate(sorted_walkins):
-        wait_mins = avg_cut_duration * i
-        start = now + timedelta(minutes=wait_mins)
-        end = start + timedelta(minutes=avg_cut_duration)
+# --- Pull from Firebase ---
+walkins = walkin_ref.get() or {}
+bookings = booking_ref.get() or {}
+
+# --- Sort both ---
+sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
+sorted_bookings = sorted(bookings.items(), key=lambda x: x[1]["slot"])
+
+# --- Create unified queue list with estimated start times ---
+queue = []
+
+# Add walk-ins with calculated time
+walkin_time = open_time
+for i, (key, person) in enumerate(sorted_walkins):
+    estimated_start = walkin_time + timedelta(minutes=avg_cut_duration * i)
+    queue.append({
+        "name": person["name"],
+        "source": "walkin",
+        "start": estimated_start
+    })
+
+# Add bookings with actual slot time
+for _, person in sorted_bookings:
+    queue.append({
+        "name": person["name"],
+        "source": "booking",
+        "start": datetime.fromisoformat(person["slot"])
+    })
+
+# --- Sort unified queue by start time ---
+queue_sorted = sorted(queue, key=lambda x: x["start"])
+
+# --- Queue Display ---
+st.subheader("🧑‍🦱 Queue Overview (Walk-ins + Bookings)")
+
+if queue_sorted:
+    for i, person in enumerate(queue_sorted):
+        wait_mins = int((person["start"] - now).total_seconds() / 60)
+        end_time = person["start"] + timedelta(minutes=avg_cut_duration)
 
         col1, col2 = st.columns([5, 1])
         with col1:
             st.markdown(
-                f"### {i+1}. {person['name']}  \n"
-                f"🕒 Wait: {wait_mins} mins  \n"
-                f"📅 Est: {start.strftime('%H:%M')} – {end.strftime('%H:%M')}"
+                f"### {i+1}. {person['name']} ({'Booking' if person['source'] == 'booking' else 'Walk-in'})  \n"
+                f"🕒 Wait: {max(wait_mins, 0)} mins  \n"
+                f"📅 Est: {person['start'].strftime('%H:%M')} – {end_time.strftime('%H:%M')}"
             )
-        with col2:
-            if st.button("✅ Done", key=f"done_{key}", use_container_width=True):
-                walkin_ref.child(key).delete()
-                st.success(f"{person['name']} removed from queue.")
-                st.rerun()
 else:
     st.info("No one is in the queue yet.")
 
-# --- CSV Export Section (admin-only) ---
+# --- CSV Export Section ---
 st.divider()
 st.subheader("📁 Export Logs")
 
