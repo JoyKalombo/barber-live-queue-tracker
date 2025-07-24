@@ -58,7 +58,7 @@ with st.form("add_name_form"):
 
         if already_in_queue:
             st.warning(f"⚠️ {name_clean}, you're already in the queue!")
-            else:
+        else:
             # Push to main walk-ins list
             walkin_ref.push({
                 "name": name_clean,
@@ -73,16 +73,18 @@ with st.form("add_name_form"):
                 "joined_at": now.isoformat()
             })
 
-        position = len(sorted_walkins) + 1
+            position = len(sorted_walkins) + 1
             est_start = now + timedelta(minutes=avg_cut_duration * (position - 1))
             est_wait = avg_cut_duration * (position - 1)
+
             # Store confirmation in session_state
             st.session_state["confirmation_message"] = {
                 "name": name_clean,
-                "position": "you are numner " + position + " in the queue",
-                "wait ⏳": est_wait + "minutes",
-                "time 🕒": est_start.strftime('%H:%M')
+                "position": position,
+                "wait": est_wait,
+                "time": est_start.strftime('%H:%M')
             }
+
             st.experimental_set_query_params(added="1")  # dummy param to avoid refresh loop
             st.rerun()
 
