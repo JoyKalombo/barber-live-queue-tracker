@@ -2,4 +2,3 @@ streamlit
 firebase-admin
 python-dotenv
 streamlit-autorefresh
-streamlit --upgrade
