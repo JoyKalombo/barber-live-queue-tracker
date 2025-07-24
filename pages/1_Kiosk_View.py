@@ -18,9 +18,25 @@ st.set_page_config(page_title="Kiosk View", layout="wide")
 # --- Auto-refresh every 20s ---
 st_autorefresh(interval=20_000, limit=None, key="kiosk_refresh")
 
-st.title("💈 Queue Tracker – Public View")
-st.info("This is a display-only view. Names are hidden for privacy.")
+st.title("💈 Queue Tracker – Kiosk View")
+st.info("Add your name and see estimated wait time. Names are hidden for privacy.")
 
+# --- ✍️ Join the queue form ---
+with st.form("add_name_form"):
+    name = st.text_input("Enter your first name to join the queue:", placeholder="e.g. Ali")
+    submit = st.form_submit_button("➕ Join Queue")
+    if submit and name.strip():
+        walkin_ref.push({
+            "name": name.strip().title(),
+            "joined_at": now.isoformat()
+        })
+        st.success("✅ You've been added to the queue!")
+        st.rerun()
+
+st.divider()
+st.subheader("📋 Live Queue (Anonymised)")
+
+# --- Queue display ---
 walkins = walkin_ref.get()
 if walkins:
     sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
@@ -34,4 +50,4 @@ if walkins:
             f"📅 Est: {start.strftime('%H:%M')} – {end.strftime('%H:%M')}"
         )
 else:
-    st.info("No one is in the queue.")
+    st.info("No one is in the queue yet.")

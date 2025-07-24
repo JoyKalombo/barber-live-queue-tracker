@@ -43,7 +43,7 @@ is_admin = st.session_state["is_admin"] and not is_kiosk
 
 st.title("💈 Live Barber Queue Tracker")
 
-# --- Queue Add Form (Disabled in Admin/Kiosk Mode) ---
+# --- Queue Add Form (Disabled in Admin) ---
 if not is_admin and not is_kiosk:
     with st.form("walkin_form"):
         name = st.text_input("Enter your name to join the queue:", placeholder="e.g. Ali")
