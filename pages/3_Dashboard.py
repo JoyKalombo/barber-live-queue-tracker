@@ -57,14 +57,18 @@ st.subheader("📅 Weekly Engagement – Walk-ins vs Bookings")
 
 daily_counts = df.groupby(['date', 'source']).size().unstack(fill_value=0).reset_index()
 
+# Determine which columns are available
+available_sources = [col for col in ['walkin', 'booking'] if col in daily_counts.columns]
+
 fig = px.bar(
     daily_counts,
     x='date',
-    y=['walkin', 'booking'],
+    y=available_sources,
     title="Bookings vs Walk-ins per Day",
     labels={'value': 'Number of People', 'date': 'Date'},
     barmode='stack'
 )
+
 fig.update_layout(xaxis_title="Date", yaxis_title="People", legend_title="Type")
 
 st.plotly_chart(fig, use_container_width=True)
