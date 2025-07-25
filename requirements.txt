@@ -5,3 +5,4 @@ streamlit-autorefresh
 pandas
 matplotlib
 plotly
+python-dateutil
