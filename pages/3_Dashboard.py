@@ -69,14 +69,6 @@ fig.update_layout(xaxis_title="Date", yaxis_title="People", legend_title="Type")
 
 st.plotly_chart(fig, use_container_width=True)
 
-import streamlit as st
-import json
-import firebase_admin
-from firebase_admin import credentials, db
-from datetime import datetime
-import pandas as pd
-import plotly.express as px
-
 # --- Firebase init ---
 if not firebase_admin._apps:
     cred = credentials.Certificate(json.loads(st.secrets["firebase_creds"]))
