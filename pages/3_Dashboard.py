@@ -69,3 +69,43 @@ fig = px.bar(
 fig.update_layout(xaxis_title="Date", yaxis_title="People", legend_title="Type")
 
 st.plotly_chart(fig, use_container_width=True)
+
+# --- Hourly Popularity Chart by Day of Week ---
+st.divider()
+st.subheader("📆 Popular Hours by Day (Walk-ins vs Bookings)")
+
+df['day_of_week'] = df['joined_at'].dt.day_name()
+df['hour_of_day'] = df['joined_at'].dt.hour
+
+hourly_counts = df.groupby(['day_of_week', 'hour_of_day', 'source']).size().unstack(fill_value=0).reset_index()
+
+# Keep only booking hours (10:00 to 21:00)
+hourly_counts = hourly_counts[(hourly_counts['hour_of_day'] >= 10) & (hourly_counts['hour_of_day'] <= 21)]
+
+# Ensure consistent weekday order
+day_order = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+hourly_counts['day_of_week'] = pd.Categorical(hourly_counts['day_of_week'], categories=day_order, ordered=True)
+hourly_counts = hourly_counts.sort_values(['day_of_week', 'hour_of_day'])
+
+for day in day_order:
+    day_df = hourly_counts[hourly_counts['day_of_week'] == day]
+    if day_df.empty:
+        continue
+
+    available_sources = [col for col in ['walkin', 'booking'] if col in day_df.columns]
+
+    fig = px.bar(
+        day_df,
+        x='hour_of_day',
+        y=available_sources,
+        title=f"{day}",
+        labels={'hour_of_day': 'Hour', 'value': 'Number of People'},
+        barmode='stack',
+        height=300
+    )
+    fig.update_layout(
+        xaxis=dict(dtick=1, tickmode='linear', range=[10, 21]),
+        yaxis_title="People",
+        legend_title="Type"
+    )
+    st.plotly_chart(fig, use_container_width=True)
