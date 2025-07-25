@@ -32,7 +32,9 @@ for _, b in bookings.items():
     combined.append({"name": b["name"], "joined_at": b["slot"], "source": "booking"})
 
 df = pd.DataFrame(combined)
-df['joined_at'] = pd.to_datetime(df['joined_at'])
+df = df[df['joined_at'].notnull()]
+df['joined_at'] = pd.to_datetime(df['joined_at'], errors='coerce')
+df = df.dropna(subset=['joined_at'])
 df['hour'] = df['joined_at'].dt.floor('H')
 df = df.sort_values('joined_at')
 
