@@ -4,7 +4,7 @@ import firebase_admin
 from firebase_admin import credentials, db
 from datetime import datetime
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.express as px
 
 # --- Firebase init ---
 if not firebase_admin._apps:
@@ -21,7 +21,7 @@ walkins = walkin_ref.get() or {}
 bookings = booking_ref.get() or {}
 
 if not walkins and not bookings:
-    st.info("No walk-ins or bookings yet today.")
+    st.info("No walk-ins or bookings yet.")
     st.stop()
 
 # --- Combine data ---
@@ -35,6 +35,7 @@ df = pd.DataFrame(combined)
 df = df[df['joined_at'].notnull()]
 df['joined_at'] = pd.to_datetime(df['joined_at'], errors='coerce')
 df = df.dropna(subset=['joined_at'])
+df['date'] = df['joined_at'].dt.date
 df['hour'] = df['joined_at'].dt.floor('H')
 df = df.sort_values('joined_at')
 
@@ -50,18 +51,20 @@ now = datetime.now()
 wait_time = (now - first).seconds // 60
 st.metric("⏳ Longest Wait Time", f"{wait_time} mins")
 
-# --- Graphs ---
+# --- Daily Chart (Interactive) ---
 st.divider()
-st.subheader("📊 Booking & Walk-in Timeline")
+st.subheader("📅 Weekly Engagement – Walk-ins vs Bookings")
 
-hourly_counts = df.groupby(['hour', 'source']).size().unstack(fill_value=0)
+daily_counts = df.groupby(['date', 'source']).size().unstack(fill_value=0).reset_index()
 
-fig, ax = plt.subplots()
-hourly_counts.plot(kind='bar', stacked=True, ax=ax)
-plt.title("Bookings vs Walk-ins Per Hour")
-plt.xlabel("Hour")
-plt.ylabel("Number of People")
-plt.xticks(rotation=45)
-plt.tight_layout()
+fig = px.bar(
+    daily_counts,
+    x='date',
+    y=['walkin', 'booking'],
+    title="Bookings vs Walk-ins per Day",
+    labels={'value': 'Number of People', 'date': 'Date'},
+    barmode='stack'
+)
+fig.update_layout(xaxis_title="Date", yaxis_title="People", legend_title="Type")
 
-st.pyplot(fig)
+st.plotly_chart(fig, use_container_width=True)
