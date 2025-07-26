@@ -59,7 +59,7 @@ used_slots = []
 
 # Add booking time slots to used list
 for _, booking in sorted_bookings:
-    start = datetime.fromisoformat(booking["slot"])
+    start = datetime.fromisoformat(booking["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
     end = start + timedelta(minutes=avg_cut_duration)
     used_slots.append((start, end))
 

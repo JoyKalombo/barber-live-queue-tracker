@@ -34,7 +34,7 @@ for _, b in bookings.items():
 
 df = pd.DataFrame(combined)
 df = df[df['joined_at'].notnull()]
-df['joined_at'] = pd.to_datetime(df['joined_at'], errors='coerce').dt.tz_convert("Europe/London") if df['joined_at'].dt.tz else pd.to_datetime(df['joined_at'], utc=True).dt.tz_convert("Europe/London")
+df['joined_at'] = pd.to_datetime(df['joined_at'], utc=True, errors='coerce').dt.tz_convert("Europe/London")
 df = df.dropna(subset=['joined_at'])
 df['date'] = df['joined_at'].dt.date
 df['hour'] = df['joined_at'].dt.floor('h')  # changed from 'H' to 'h' to prevent future warning
