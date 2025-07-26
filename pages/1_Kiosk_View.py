@@ -15,7 +15,7 @@ walkin_ref = db.reference("walkins")
 booking_ref = db.reference("bookings")
 avg_cut_duration = 25
 open_time = datetime.now(ZoneInfo("Europe/London")).replace(hour=10, minute=0, second=0, microsecond=0)
-open_time = datetime.now(ZoneInfo("Europe/London")).replace(hour=10, minute=0, second=0, microsecond=0)
+now = datetime.now(ZoneInfo("Europe/London"))
 
 st.set_page_config(page_title="Kiosk View", layout="wide")
 st.title("💈 Queue Tracker – Kiosk View")
