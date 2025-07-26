@@ -30,11 +30,13 @@ selected_date = st.date_input("Pick a date:", min_value=today)
 # Only show time slots if a date is selected
 if selected_date:
     # Recalculate today's current time without seconds/milliseconds
-    now = datetime.now().replace(second=0, microsecond=0)
+    tz = ZoneInfo("Europe/London")
+    now = datetime.now(tz).replace(second=0, microsecond=0)
 
     # Adjust open/close time for selected day
-    open_time = datetime.combine(selected_date, datetime.min.time()).replace(hour=10)
-    close_time = datetime.combine(selected_date, datetime.min.time()).replace(hour=22)
+    tz = ZoneInfo("Europe/London")
+    open_time = datetime.combine(selected_date, datetime.min.time(), tzinfo=tz).replace(hour=10)
+    close_time = datetime.combine(selected_date, datetime.min.time(), tzinfo=tz).replace(hour=22)
 
     walkins = walkin_ref.get() or {}
     bookings = booking_ref.get() or {}
