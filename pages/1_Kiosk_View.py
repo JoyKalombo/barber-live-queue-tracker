@@ -141,6 +141,12 @@ with st.form("add_name_form"):
                 if joined_at.date() != now.date():
                     continue  # skip old entries
 
+                all_used = [
+                    (start, end)
+                    for start, end in all_used
+                    if isinstance(start, datetime) and isinstance(end, datetime)
+                ]
+
                 while any(start <= walkin_time < end for start, end in all_used):
                     walkin_time += timedelta(minutes=avg_cut_duration)
 
