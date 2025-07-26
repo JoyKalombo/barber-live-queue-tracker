@@ -60,7 +60,7 @@ if selected_date:
 
     # Block out bookings on selected date
     for _, b in sorted_bookings:
-        slot_dt = datetime.fromisoformat(b["slot"])
+        slot_dt = datetime.fromisoformat(b["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
         if slot_dt.date() == selected_date:
             blocked_slots.append((slot_dt, slot_dt + timedelta(minutes=avg_cut_duration)))
 

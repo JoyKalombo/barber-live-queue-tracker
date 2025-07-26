@@ -58,7 +58,7 @@ try:
 
     # Add booking slots to the list of used time windows
     for _, booking in sorted_bookings:
-        start = datetime.fromisoformat(booking["slot"])
+        start = datetime.fromisoformat(booking["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
         end = start + timedelta(minutes=avg_cut_duration)
         used_slots.append((start, end))
 
@@ -85,7 +85,7 @@ try:
     for _, person in sorted_bookings:
         queue.append({
             "source": "booking",
-            "start": datetime.fromisoformat(person["slot"])
+            "start": datetime.fromisoformat(booking["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
         })
 
     # Sort final queue
@@ -112,7 +112,7 @@ with st.form("add_name_form"):
         else:
             walkin_ref.push({
                 "name": name_clean,
-                "joined_at": now.isoformat()
+                "joined_at": now.isoformat().replace(tzinfo=ZoneInfo("Europe/London"))
             })
 
             # Also log
@@ -120,7 +120,7 @@ with st.form("add_name_form"):
             log_ref = db.reference(f"logs/{date_today}")
             log_ref.push({
                 "name": name_clean,
-                "joined_at": now.isoformat()
+                "joined_at": now.isoformat().replace(tzinfo=ZoneInfo("Europe/London"))
             })
 
             # Recalculate used slots
