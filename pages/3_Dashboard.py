@@ -3,6 +3,7 @@ import json
 import firebase_admin
 from firebase_admin import credentials, db
 from datetime import datetime
+from zoneinfo import ZoneInfo
 import pandas as pd
 import plotly.express as px
 
@@ -33,7 +34,7 @@ for _, b in bookings.items():
 
 df = pd.DataFrame(combined)
 df = df[df['joined_at'].notnull()]
-df['joined_at'] = pd.to_datetime(df['joined_at'], errors='coerce')
+df['joined_at'] = pd.to_datetime(df['joined_at'], errors='coerce').dt.tz_convert("Europe/London") if df['joined_at'].dt.tz else pd.to_datetime(df['joined_at'], utc=True).dt.tz_convert("Europe/London")
 df = df.dropna(subset=['joined_at'])
 df['date'] = df['joined_at'].dt.date
 df['hour'] = df['joined_at'].dt.floor('h')  # changed from 'H' to 'h' to prevent future warning
@@ -47,7 +48,7 @@ st.metric("🧑‍🦱 Walk-ins", (df['source'] == 'walkin').sum())
 st.metric("📅 Bookings", (df['source'] == 'booking').sum())
 
 first = df.iloc[0]['joined_at']
-now = datetime.now()
+now = datetime.now(ZoneInfo("Europe/London"))
 wait_time = (now - first).seconds // 60
 st.metric("⏳ Longest Wait Time", f"{wait_time} mins")
 

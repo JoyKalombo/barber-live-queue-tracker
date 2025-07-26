@@ -3,6 +3,7 @@ import json
 import firebase_admin
 from firebase_admin import credentials, db
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 from streamlit_autorefresh import st_autorefresh
 import pandas as pd
 from io import StringIO
@@ -15,8 +16,8 @@ if not firebase_admin._apps:
 walkin_ref = db.reference("walkins")
 booking_ref = db.reference("bookings")
 avg_cut_duration = 25  # in minutes
-now = datetime.now()
-open_time = now.replace(hour=10, minute=0, second=0, microsecond=0)
+now = datetime.now(ZoneInfo("Europe/London"))
+open_time = datetime.now(ZoneInfo("Europe/London")).replace(hour=10, minute=0, second=0, microsecond=0)
 
 st.set_page_config(page_title="Admin Panel", layout="wide")
 
