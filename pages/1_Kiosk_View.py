@@ -114,18 +114,34 @@ with st.form("add_name_form"):
                 "joined_at": now.isoformat()
             })
 
-            # Position in unified queue
-            total_queue = queue_sorted + [{
-                "source": "walkin",
-                "start": now
-            }]
-            total_queue_sorted = sorted(total_queue, key=lambda x: x["start"])
-            position = total_queue_sorted.index(
-                next(q for q in total_queue_sorted if q["source"] == "walkin" and q["start"] == now)
-            ) + 1
+            # Recalculate used slots
+            all_used = []
 
-            est_start = now + timedelta(minutes=avg_cut_duration * (position - 1))
-            est_wait = avg_cut_duration * (position - 1)
+            for _, b in sorted_bookings:
+                start = datetime.fromisoformat(b["slot"])
+                end = start + timedelta(minutes=avg_cut_duration)
+                all_used.append((start, end))
+
+            for _, w in sorted_walkins:
+                joined = datetime.fromisoformat(w["joined_at"])
+                end = joined + timedelta(minutes=avg_cut_duration)
+                all_used.append((joined, end))
+
+            # Find next valid walk-in slot
+            candidate_time = max(now, open_time)
+            while any(start <= candidate_time < end for start, end in all_used):
+                candidate_time += timedelta(minutes=avg_cut_duration)
+
+            # Add to confirmation message
+            est_start = candidate_time
+            est_wait = int((est_start - now).total_seconds() / 60)
+
+            st.session_state["confirmation_message"] = {
+                "name": name_clean,
+                "position": len(queue_sorted) + 1,
+                "wait": est_wait,
+                "time": est_start.strftime('%H:%M')
+            }
 
             st.session_state["confirmation_message"] = {
                 "name": name_clean,
