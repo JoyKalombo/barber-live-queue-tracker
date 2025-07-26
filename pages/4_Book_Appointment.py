@@ -4,7 +4,6 @@ import firebase_admin
 from firebase_admin import credentials, db
 from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
-import pytz
 
 # --- Firebase init (singleton) ---
 if not firebase_admin._apps:
@@ -97,16 +96,3 @@ if selected_date:
                 st.rerun()
     else:
         st.info("🕒 No appointment slots available for this date.")
-
-# --- Show confirmation if booking was successful ---
-if "booking_confirmation" in st.session_state:
-    confirm = st.session_state["booking_confirmation"]
-    booked_dt = datetime.fromisoformat(confirm["datetime"])
-    booked_day = booked_dt.strftime("%A %d %B %Y")
-    booked_time = booked_dt.strftime("%H:%M")
-
-    st.success(
-        f"✅ {confirm['name']}, your booking has been made!\n\n"
-        f"📅 Date: **{booked_day}**\n\n"
-        f"🕒 Time: **{booked_time}**"
-    )

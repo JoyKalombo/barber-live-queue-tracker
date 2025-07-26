@@ -83,15 +83,20 @@ for _, walkin in sorted_walkins:
 
     walkin_time = estimated_end  # move forward
 
-
 # Add bookings with actual slot time
 for _, person in sorted_bookings:
-    queue.append({
-        "name": person["name"],
-        "source": "booking",
-        "start": datetime.fromisoformat(person["slot"])
-    })
+    try:
+        slot_time = datetime.fromisoformat(person["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
+        queue.append({
+            "name": person["name"],
+            "source": "booking",
+            "start": slot_time
+        })
+    except Exception as e:
+        st.warning(f"⚠️ Skipped booking for {person.get('name', 'Unknown')} due to invalid time format.")
 
+# Filter out any entries missing start times
+queue = [entry for entry in queue if entry.get("start") is not None]
 # --- Sort unified queue by start time ---
 queue_sorted = sorted(queue, key=lambda x: x["start"])
 
@@ -106,7 +111,7 @@ if queue_sorted:
         col1, col2 = st.columns([5, 1])
         with col1:
             st.markdown(
-                f"### {i+1}. {person['name']} ({'Booking' if person['source'] == 'booking' else 'Walk-in'})  \n"
+                f"### {i + 1}. {person['name']} ({'Booking' if person['source'] == 'booking' else 'Walk-in'})  \n"
                 f"🕒 Wait: {max(wait_mins, 0)} mins  \n"
                 f"📅 Est: {person['start'].strftime('%H:%M')} – {end_time.strftime('%H:%M')}"
             )
