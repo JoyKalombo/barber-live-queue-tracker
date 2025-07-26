@@ -20,6 +20,13 @@ close_time = datetime.now().replace(hour=22, minute=0, second=0, microsecond=0)
 st.set_page_config(page_title="Book Appointment", layout="centered")
 st.title("📅 Book an Appointment")
 
+# Show success message if booking just happened
+if "booking_confirmation" in st.session_state:
+    booking = st.session_state["booking_confirmation"]
+    dt = datetime.fromisoformat(booking["datetime"]).astimezone(ZoneInfo("Europe/London"))
+    formatted_dt = dt.strftime("%A %d %B at %I:%M %p")
+    st.success(f"✅ {booking['name']}, your booking is confirmed for {formatted_dt}.")
+
 # Add this near the top with the other now-related variables
 today = datetime.now().date()
 
