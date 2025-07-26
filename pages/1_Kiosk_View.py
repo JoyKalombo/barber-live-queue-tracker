@@ -128,6 +128,8 @@ with st.form("add_name_form"):
 
             for _, b in sorted_bookings:
                 start = datetime.fromisoformat(b["slot"])
+                if start.tzinfo is None:
+                    start = start.replace(tzinfo=ZoneInfo("Europe/London"))
                 end = start + timedelta(minutes=avg_cut_duration)
                 all_used.append((start, end))
 
@@ -138,6 +140,9 @@ with st.form("add_name_form"):
             for _, w in sorted_walkins:
                 # Skip walk-ins that were joined before today or long ago (optional, based on your needs)
                 joined_at = datetime.fromisoformat(w["joined_at"])
+                if joined_at.tzinfo is None:
+                    joined_at = joined_at.replace(tzinfo=ZoneInfo("Europe/London"))
+
                 if joined_at.date() != now.date():
                     continue  # skip old entries
 
