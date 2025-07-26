@@ -112,7 +112,7 @@ with st.form("add_name_form"):
         else:
             walkin_ref.push({
                 "name": name_clean,
-                "joined_at": now.isoformat().replace(tzinfo=ZoneInfo("Europe/London"))
+                "joined_at": now.isoformat()
             })
 
             # Also log
@@ -120,7 +120,7 @@ with st.form("add_name_form"):
             log_ref = db.reference(f"logs/{date_today}")
             log_ref.push({
                 "name": name_clean,
-                "joined_at": now.isoformat().replace(tzinfo=ZoneInfo("Europe/London"))
+                "joined_at": now.isoformat()
             })
 
             # Recalculate used slots
