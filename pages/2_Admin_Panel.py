@@ -54,14 +54,34 @@ sorted_bookings = sorted(bookings.items(), key=lambda x: x[1]["slot"])
 queue = []
 
 # Add walk-ins with calculated time
-walkin_time = open_time
-for i, (key, person) in enumerate(sorted_walkins):
-    estimated_start = walkin_time + timedelta(minutes=avg_cut_duration * i)
+used_slots = []
+
+# Add booking time slots to used list
+for _, booking in sorted_bookings:
+    start = datetime.fromisoformat(booking["slot"])
+    end = start + timedelta(minutes=avg_cut_duration)
+    used_slots.append((start, end))
+
+# Dynamically assign walk-in slots avoiding clashes
+walkin_time = max(now, open_time)
+
+for _, walkin in sorted_walkins:
+    # Find the next time that doesn’t clash
+    while any(start <= walkin_time < end for start, end in used_slots):
+        walkin_time += timedelta(minutes=avg_cut_duration)
+
+    estimated_start = walkin_time
+    estimated_end = estimated_start + timedelta(minutes=avg_cut_duration)
+    used_slots.append((estimated_start, estimated_end))
+
     queue.append({
-        "name": person["name"],
+        "name": walkin["name"],
         "source": "walkin",
         "start": estimated_start
     })
+
+    walkin_time = estimated_end  # move forward
+
 
 # Add bookings with actual slot time
 for _, person in sorted_bookings:
