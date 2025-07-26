@@ -45,14 +45,33 @@ try:
     # Create unified queue
     queue = []
 
-    # Estimate walk-in start times
-    walkin_time = open_time
-    for i, (key, person) in enumerate(sorted_walkins):
-        estimated_start = walkin_time + timedelta(minutes=avg_cut_duration * i)
+    # --- Calculate walk-in slots dynamically ---
+    used_slots = []
+
+    # Add booking slots to the list of used time windows
+    for _, booking in sorted_bookings:
+        start = datetime.fromisoformat(booking["slot"])
+        end = start + timedelta(minutes=avg_cut_duration)
+        used_slots.append((start, end))
+
+    # Start from the later of 'now' or 'open_time'
+    walkin_time = max(now, open_time)
+
+    for _, walkin in sorted_walkins:
+        # Find next available time that doesn't conflict
+        while any(start <= walkin_time < end for start, end in used_slots):
+            walkin_time += timedelta(minutes=avg_cut_duration)
+
+        estimated_start = walkin_time
+        estimated_end = estimated_start + timedelta(minutes=avg_cut_duration)
+        used_slots.append((estimated_start, estimated_end))  # block it for the next one
+
         queue.append({
             "source": "walkin",
             "start": estimated_start
         })
+
+        walkin_time = estimated_end  # next possible start time
 
     # Add bookings with their slot times
     for _, person in sorted_bookings:
