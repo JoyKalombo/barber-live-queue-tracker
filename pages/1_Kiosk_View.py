@@ -127,14 +127,23 @@ with st.form("add_name_form"):
 
             # Block future walk-ins by recalculating their actual allocated slots
             for _, w in sorted_walkins:
+                # Skip walk-ins that were joined before today or long ago (optional, based on your needs)
+                joined_at = datetime.fromisoformat(w["joined_at"])
+                if joined_at.date() != now.date():
+                    continue  # skip old entries
+
                 while any(start <= walkin_time < end for start, end in all_used):
                     walkin_time += timedelta(minutes=avg_cut_duration)
+
+                if walkin_time < now:
+                    # Skip this walk-in because their slot would have been in the past
+                    walkin_time += timedelta(minutes=avg_cut_duration)
+                    continue
 
                 est_start = walkin_time
                 est_end = est_start + timedelta(minutes=avg_cut_duration)
                 all_used.append((est_start, est_end))
-
-                walkin_time = est_end  # move forward
+                walkin_time = est_end
 
             # Find next valid walk-in slot
             candidate_time = max(now, open_time)
