@@ -122,10 +122,19 @@ with st.form("add_name_form"):
                 end = start + timedelta(minutes=avg_cut_duration)
                 all_used.append((start, end))
 
+            # Rebuild walk-in slots like we do in the main queue
+            walkin_time = max(now, open_time)
+
+            # Block future walk-ins by recalculating their actual allocated slots
             for _, w in sorted_walkins:
-                joined = datetime.fromisoformat(w["joined_at"])
-                end = joined + timedelta(minutes=avg_cut_duration)
-                all_used.append((joined, end))
+                while any(start <= walkin_time < end for start, end in all_used):
+                    walkin_time += timedelta(minutes=avg_cut_duration)
+
+                est_start = walkin_time
+                est_end = est_start + timedelta(minutes=avg_cut_duration)
+                all_used.append((est_start, est_end))
+
+                walkin_time = est_end  # move forward
 
             # Find next valid walk-in slot
             candidate_time = max(now, open_time)
