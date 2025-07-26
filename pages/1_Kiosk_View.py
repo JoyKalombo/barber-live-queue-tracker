@@ -40,8 +40,15 @@ try:
     walkins = walkin_ref.get() or {}
     bookings = booking_ref.get() or {}
 
-    sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
-    sorted_bookings = sorted(bookings.items(), key=lambda x: x[1]["slot"])
+    sorted_walkins = sorted(
+        [(k, v) for k, v in walkins.items() if "joined_at" in v],
+        key=lambda x: x[1]["joined_at"]
+    )
+
+    sorted_bookings = sorted(
+        [(k, v) for k, v in bookings.items() if "slot" in v],
+        key=lambda x: x[1]["slot"]
+    )
 
     # Create unified queue
     queue = []
@@ -86,6 +93,7 @@ try:
 
 except Exception as e:
     st.error("⚠️ Failed to load queue data. Please try again later.")
+    st.exception(e)  # 👈 shows what actually went wrong
     st.stop()
 
 # --- Join the queue form ---
@@ -175,7 +183,7 @@ if queue_sorted:
         end = person["start"] + timedelta(minutes=avg_cut_duration)
 
         st.markdown(
-            f"### Person {i+1} ({'Booking' if person['source'] == 'booking' else 'Walk-in'})  \n"
+            f"### Person {i + 1} ({'Booking' if person['source'] == 'booking' else 'Walk-in'})  \n"
             f"🕒 Wait: {wait_mins} mins  \n"
             f"📅 Est: {person['start'].strftime('%H:%M')} – {end.strftime('%H:%M')}"
         )

@@ -38,8 +38,15 @@ if selected_date:
     walkins = walkin_ref.get() or {}
     bookings = booking_ref.get() or {}
 
-    sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
-    sorted_bookings = sorted(bookings.items(), key=lambda x: x[1]["slot"])
+    sorted_walkins = sorted(
+        [(k, v) for k, v in walkins.items() if "joined_at" in v],
+        key=lambda x: x[1]["joined_at"]
+    )
+
+    sorted_bookings = sorted(
+        [(k, v) for k, v in bookings.items() if "slot" in v],
+        key=lambda x: x[1]["slot"]
+    )
 
     # --- Generate blocked time ranges ---
     blocked_slots = []
