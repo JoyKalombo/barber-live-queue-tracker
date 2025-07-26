@@ -143,13 +143,6 @@ with st.form("add_name_form"):
                 "time": est_start.strftime('%H:%M')
             }
 
-            st.session_state["confirmation_message"] = {
-                "name": name_clean,
-                "position": position,
-                "wait": est_wait,
-                "time": est_start.strftime('%H:%M')
-            }
-
             st.experimental_set_query_params(added="1")
             st.rerun()
 
