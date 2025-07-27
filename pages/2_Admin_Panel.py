@@ -101,7 +101,7 @@ queue = [entry for entry in queue if entry.get("start") is not None]
 queue_sorted = sorted(queue, key=lambda x: x["start"])
 
 # --- Queue Display ---
-st.subheader("🧑‍🦱 Queue Overview (Walk-ins + Bookings)")
+st.subheader("🧑🏿‍🦱 Queue Overview (Walk-ins + Bookings)")
 
 if queue_sorted:
     for i, person in enumerate(queue_sorted):
