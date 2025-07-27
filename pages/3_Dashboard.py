@@ -44,7 +44,7 @@ df = df.sort_values('joined_at')
 st.subheader("📈 Key Stats")
 
 st.metric("👥 Total People", len(df))
-st.metric("🧑🏿‍🦱🦱 Walk-ins", (df['source'] == 'walkin').sum())
+st.metric("🧑🏿‍🦱 Walk-ins", (df['source'] == 'walkin').sum())
 st.metric("📅 Bookings", (df['source'] == 'booking').sum())
 
 first = df.iloc[0]['joined_at']
