@@ -26,5 +26,5 @@ This app helps manage both **walk-ins** and **booked appointments** seamlessly.
 - View queue sizes and estimated wait times  
 
 👉🏿 Use the sidebar to switch between pages.  
-Let’s make queueing smarter, smoother, and stress-free! 💇🏿‍‍♂️✨💇🏿‍♀️
+Let’s make queueing smarter, smoother, and stress-free! 💇🏿‍‍♂✨💇🏿‍♀️
 """)
