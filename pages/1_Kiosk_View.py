@@ -33,7 +33,7 @@ if "confirmation_message" in st.session_state:
     if st_autorefresh(interval=20_000, limit=1, key="clear_confirmation_refresh"):
         del st.session_state["confirmation_message"]
 
-st.info("Add your FIRST NAME to join the queue. Names are hidden for privacy. Only the Barber can see your name.")
+st.info("Add your FULL NAME to join the queue. Names are hidden for privacy. Only the Barber can see your name.")
 
 # --- Retrieve queue data ---
 try:
@@ -98,7 +98,7 @@ except Exception as e:
 
 # --- Join the queue form ---
 with st.form("add_name_form"):
-    name = st.text_input("Enter your first name to join the queue:", placeholder="e.g. Ali")
+    name = st.text_input("Enter your full name to join the queue:", placeholder="e.g. Ali")
     submit = st.form_submit_button("➕ Join Queue")
 
     if submit and name.strip():
