@@ -27,7 +27,7 @@ if "booking_confirmation" in st.session_state:
     formatted_dt = dt.strftime("%A %d %B at %I:%M %p")
     st.success(f"✅ {booking['name']}, your booking is confirmed for {formatted_dt}.")
 
-# Add this near the top with the other now-related variables
+# Showcasing the current date and time
 today = datetime.now().date()
 
 # --- Booking Form ---
@@ -63,8 +63,15 @@ if selected_date:
 
     # Block out walk-ins only if selected_date is today
     if selected_date == today:
-        walkin_start = open_time
-        for _ in sorted_walkins:
+        walkin_queue = [
+            datetime.fromisoformat(v["joined_at"]).replace(tzinfo=tz)
+            for k, v in sorted_walkins
+            if "joined_at" in v and datetime.fromisoformat(v["joined_at"]).date() == selected_date
+        ]
+
+        # Start from open_time or now (whichever is later)
+        walkin_start = max(open_time, now)
+        for _ in walkin_queue:
             blocked_slots.append((walkin_start, walkin_start + timedelta(minutes=avg_cut_duration)))
             walkin_start += timedelta(minutes=avg_cut_duration)
 
