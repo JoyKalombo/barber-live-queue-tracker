@@ -2,12 +2,6 @@ import streamlit as st
 
 from utils.firebase_utils import get_all_barber_ids, get_barber_config
 
-# --- Handle barber ID from URL ---
-query_params = st.query_params
-barber_id = query_params.get("barber", "default_barber")
-
-# Load the barber config
-config = get_barber_config(barber_id)
 
 st.set_page_config(page_title="Barber Queue Tracker", layout="centered")
 st.title("💈 Welcome to the Barber Queue App")
@@ -42,6 +36,13 @@ Let’s make queueing smarter, smoother, and stress-free! 💇🏿‍‍✨💇�
 
 st.set_page_config(page_title="Barber Selector", layout="centered")
 st.title("💈 Choose Your Barber")
+
+# --- Handle barber ID from URL ---
+query_params = st.query_params
+barber_id = query_params.get("barber", "default_barber")
+
+# Load the barber config
+config = get_barber_config(barber_id)
 
 # Get all barber IDs
 barber_ids = get_all_barber_ids()  # <-- We'll define this in firebase_utils
