@@ -1,15 +1,9 @@
 import streamlit as st
-
 from utils.firebase_utils import get_all_barber_ids, get_barber_config
 
-# --- Handle barber ID from URL ---
-query_params = st.query_params
-barber_id = query_params.get("barber", "default_barber")
-
-# Load the barber config
-config = get_barber_config(barber_id)
-
+# --- Page Setup ---
 st.set_page_config(page_title="Barber Queue Tracker", layout="centered")
+
 st.title("💈 Welcome to the Barber Queue App")
 
 st.markdown("""
@@ -38,40 +32,39 @@ This app helps manage both **walk-ins** and **booked appointments** seamlessly.
 Let’s make queueing smarter, smoother, and stress-free! 💇🏿‍‍✨💇🏿‍♀️
 """)
 
-# --- Page Setup ---
-st.set_page_config(page_title="Barber Selector", layout="centered")
+st.divider()
 st.title("💈 Choose Your Barber")
 
 # --- Barber Selection ---
 barber_ids = get_all_barber_ids()
+
+if not barber_ids:
+    st.warning("⚠️ No barbers found in the system.")
+    st.stop()
+
 selected_barber = st.selectbox("Select a Barber:", barber_ids)
 
 if selected_barber:
     config = get_barber_config(selected_barber)
     logo_url = config.get("logo_url", "")
+    shop_name = config.get("shop_name", selected_barber.replace("_", " ").title())
 
     if logo_url:
         st.image(logo_url, width=200)
 
-    st.markdown(f"### Welcome to **{selected_barber.replace('_', ' ').title()}**!")
-
+    st.markdown(f"### Welcome to **{shop_name}**!")
     st.divider()
     st.markdown("#### 📍 Choose a section:")
 
-    # --- Buttons to Navigate ---
     col1, col2 = st.columns(2)
     with col1:
         if st.button("🖥️ Kiosk View"):
-            st.query_params["barber"] = selected_barber
-            st.switch_page("pages/1_Kiosk_View.py")
+            st.switch_page(f"/pages/1_Kiosk_View.py?barber={selected_barber}")
         if st.button("📊 Dashboard"):
-            st.query_params["barber"] = selected_barber
-            st.switch_page("pages/3_Dashboard.py")
+            st.switch_page(f"/pages/3_Dashboard.py?barber={selected_barber}")
 
     with col2:
         if st.button("🔐 Admin Panel"):
-            st.query_params["barber"] = selected_barber
-            st.switch_page("pages/2_Admin_Panel.py")
+            st.switch_page(f"/pages/2_Admin_Panel.py?barber={selected_barber}")
         if st.button("📅 Book Appointment"):
-            st.query_params["barber"] = selected_barber
-            st.switch_page("pages/4_Book_Appointment.py")
+            st.switch_page(f"/pages/4_Book_Appointment.py?barber={selected_barber}")
