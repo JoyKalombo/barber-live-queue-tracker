@@ -1,6 +1,6 @@
 import streamlit as st
 
-from utils.firebase_utils import get_barber_config
+from utils.firebase_utils import get_all_barber_ids, get_barber_config
 
 # --- Handle barber ID from URL ---
 query_params = st.query_params
@@ -39,8 +39,6 @@ Let’s make queueing smarter, smoother, and stress-free! 💇🏿‍‍✨💇�
 """)
 
 # main.py
-import streamlit as st
-from utils.firebase_utils import get_all_barber_ids, get_barber_config
 
 st.set_page_config(page_title="Barber Selector", layout="centered")
 st.title("💈 Choose Your Barber")
