@@ -7,41 +7,33 @@ from zoneinfo import ZoneInfo
 from streamlit_autorefresh import st_autorefresh
 
 from utils.firebase_utils import get_barber_config
-
-# ✅ MAKING BARBER SPECIFIC REQESUTS
-name = st.text_input("Name")
-date = st.date_input("Select Date")
-time = st.time_input("Select Time")
-
-if st.button("Book"):
-    bookings_ref = db.reference(f"barbers/{barber_id}/bookings")
-    bookings_ref.push({
-        "name": name,
-        "datetime": datetime.combine(date, time).isoformat()
-    })
-    st.success(f"Booked for {name} at {date} {time}")
+from utils.session import get_barber_id
 
 # --- Handle barber ID from URL ---
 query_params = st.query_params
 barber_id = query_params.get("barber", "default_barber")
 
+# --- Firebase init ---
+if not firebase_admin._apps:
+    cred = credentials.Certificate(json.loads(st.secrets["firebase_creds"]))
+    firebase_admin.initialize_app(cred, {'databaseURL': st.secrets["firebase_db_url"]})
+
 # Load the barber config
 config = get_barber_config(barber_id)
 
-# --- Firebase References ---
+# Firebase References
 walkin_ref = db.reference(f"barbers/{barber_id}/walkins")
 booking_ref = db.reference(f"barbers/{barber_id}/bookings")
 settings_ref = db.reference(f"barbers/{barber_id}/settings")
 
+# --- Page Setup ---
+st.set_page_config(page_title="Book Appointment", layout="centered")
 settings = settings_ref.get() or {}
 avg_cut_duration = settings.get("avg_cut_duration", 25)
 open_hour = settings.get("open_hour", 10)
 close_hour = settings.get("close_hour", 22)
 shop_name = settings.get("shop_name", "the barbershop")
 logo_url = settings.get("logo_url")
-
-# --- Page Setup ---
-st.set_page_config(page_title="Book Appointment", layout="centered")
 
 if logo_url:
     st.image(logo_url, width=180)
@@ -84,7 +76,6 @@ if selected_date:
     # --- Generate blocked time ranges ---
     blocked_slots = []
 
-    # Block walk-ins (only if date is today)
     if selected_date == today:
         walkin_queue = [
             datetime.fromisoformat(v["joined_at"]).replace(tzinfo=tz)
@@ -96,7 +87,6 @@ if selected_date:
             blocked_slots.append((walkin_start, walkin_start + timedelta(minutes=avg_cut_duration)))
             walkin_start += timedelta(minutes=avg_cut_duration)
 
-    # Block existing bookings
     for _, b in sorted_bookings:
         slot_dt = datetime.fromisoformat(b["slot"]).replace(tzinfo=tz)
         if slot_dt.date() == selected_date:
