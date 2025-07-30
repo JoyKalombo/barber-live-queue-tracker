@@ -7,6 +7,15 @@ from zoneinfo import ZoneInfo
 import pandas as pd
 import plotly.express as px
 
+from utils.firebase_utils import get_barber_config
+
+# --- Handle barber ID from URL ---
+query_params = st.query_params
+barber_id = query_params.get("barber", "default_barber")
+
+# Load the barber config
+config = get_barber_config(barber_id)
+
 # --- Firebase init ---
 if not firebase_admin._apps:
     cred = credentials.Certificate(json.loads(st.secrets["firebase_creds"]))
