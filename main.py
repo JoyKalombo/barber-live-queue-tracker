@@ -2,6 +2,12 @@ import streamlit as st
 
 from utils.firebase_utils import get_all_barber_ids, get_barber_config
 
+# --- Handle barber ID from URL ---
+query_params = st.query_params
+barber_id = query_params.get("barber", "default_barber")
+
+# Load the barber config
+config = get_barber_config(barber_id)
 
 st.set_page_config(page_title="Barber Queue Tracker", layout="centered")
 st.title("💈 Welcome to the Barber Queue App")
@@ -37,13 +43,6 @@ Let’s make queueing smarter, smoother, and stress-free! 💇🏿‍‍✨💇�
 st.set_page_config(page_title="Barber Selector", layout="centered")
 st.title("💈 Choose Your Barber")
 
-# --- Handle barber ID from URL ---
-query_params = st.query_params
-barber_id = query_params.get("barber", "default_barber")
-
-# Load the barber config
-config = get_barber_config(barber_id)
-
 # Get all barber IDs
 barber_ids = get_all_barber_ids()  # <-- We'll define this in firebase_utils
 
@@ -55,7 +54,8 @@ if selected_barber:
     st.markdown(f"### Welcome to **{selected_barber.replace('_', ' ').title()}**!")
 
     st.markdown("#### 📍 Choose a section:")
-    st.page_link("pages/1_Kiosk.py", label="Kiosk View", params={"barber": selected_barber})
-    st.page_link("pages/2_Admin.py", label="Admin Panel", params={"barber": selected_barber})
-    st.page_link("pages/3_Dashboard.py", label="Dashboard", params={"barber": selected_barber})
-    st.page_link("pages/4_Book_Appointment.py", label="Book Appointment", params={"barber": selected_barber})
+    st.markdown(f"[🖥️ Kiosk View](/{'1_Kiosk'}?barber={selected_barber})")
+    st.markdown(f"[🔐 Admin Panel](/{'2_Admin'}?barber={selected_barber})")
+    st.markdown(f"[📊 Dashboard](/{'3_Dashboard'}?barber={selected_barber})")
+    st.markdown(f"[📅 Book Appointment](/{'4_Book_Appointment'}?barber={selected_barber})")
+
