@@ -8,24 +8,12 @@ from streamlit_autorefresh import st_autorefresh
 
 from utils.firebase_utils import get_barber_config
 
-# Load the barber config
-barber_id = st.query_params.get("barber", "default_barber")  # fallback to "default_barber"
-config = get_barber_config(barber_id)
-
-shop_name = config.get("shop_name", "Unknown Barber")
-open_hour = config.get("open_hour", 10)
-close_hour = config.get("close_hour", 22)
-avg_cut_duration = config.get("avg_cut_duration", 25)
-logo_url = config.get("logo_url")
-
-# --- Firebase init (singleton) ---
-if not firebase_admin._apps:
-    cred = credentials.Certificate(json.loads(st.secrets["firebase_creds"]))
-    firebase_admin.initialize_app(cred, {'databaseURL': st.secrets["firebase_db_url"]})
-
 # --- Handle barber ID from URL ---
-query_params = st.experimental_get_query_params()
-barber_id = query_params.get("barber_id", ["default_barber"])[0]
+query_params = st.query_params
+barber_id = query_params.get("barber", "default_barber")
+
+# Load the barber config
+config = get_barber_config(barber_id)
 
 # --- Firebase References ---
 walkin_ref = db.reference(f"barbers/{barber_id}/walkins")
