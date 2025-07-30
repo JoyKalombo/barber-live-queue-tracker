@@ -5,8 +5,30 @@ from firebase_admin import credentials, db
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from streamlit_autorefresh import st_autorefresh
-
 from utils.firebase_utils import get_barber_config
+from utils.session import get_barber_id
+
+# ✅ MAKING BARBER SPECIFIC REQESUTS
+barber_id = get_barber_id()
+config = get_barber_config(barber_id)
+
+# ✅ Submit name to barber-specific queue
+name = st.text_input("Enter your name:")
+if st.button("Join Queue"):
+    db.reference(f"barbers/{barber_id}/queue").push({"name": name})
+    queue_ref = db.reference(f"barbers/{barber_id}/queue")
+    queue_ref.push({"name": name})
+    st.success(f"{name}, you're in the queue for {barber_id.replace('_', ' ').title()}!")
+
+# ✅ Show barber-specific queue
+queue_ref = db.reference(f"barbers/{barber_id}/queue")
+queue_data = queue_ref.get() or {}
+st.write("Current Queue:")
+for entry in queue_data.values():
+    st.write(f"• {entry['name']}")
+
+st.title(f" 💈 Kiosk for {barber_id.replace('_', ' ').title()}")
+
 
 # --- Handle barber ID from URL ---
 query_params = st.query_params

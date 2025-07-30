@@ -9,6 +9,16 @@ import plotly.express as px
 
 from utils.firebase_utils import get_barber_config
 
+# ✅ MAKING BARBER SPECIFIC REQESUTS
+queue_ref = db.reference(f"barbers/{barber_id}/queue")
+bookings_ref = db.reference(f"barbers/{barber_id}/bookings")
+
+queue_data = queue_ref.get() or {}
+bookings_data = bookings_ref.get() or {}
+
+st.metric("People in Queue", len(queue_data))
+st.metric("Upcoming Bookings", len(bookings_data))
+
 # --- Handle barber ID from URL ---
 query_params = st.query_params
 barber_id = query_params.get("barber", "default_barber")

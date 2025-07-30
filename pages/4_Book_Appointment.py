@@ -8,6 +8,19 @@ from streamlit_autorefresh import st_autorefresh
 
 from utils.firebase_utils import get_barber_config
 
+# ✅ MAKING BARBER SPECIFIC REQESUTS
+name = st.text_input("Name")
+date = st.date_input("Select Date")
+time = st.time_input("Select Time")
+
+if st.button("Book"):
+    bookings_ref = db.reference(f"barbers/{barber_id}/bookings")
+    bookings_ref.push({
+        "name": name,
+        "datetime": datetime.combine(date, time).isoformat()
+    })
+    st.success(f"Booked for {name} at {date} {time}")
+
 # --- Handle barber ID from URL ---
 query_params = st.query_params
 barber_id = query_params.get("barber", "default_barber")

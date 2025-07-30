@@ -10,6 +10,24 @@ from io import StringIO
 
 from utils.firebase_utils import get_barber_config
 
+# ✅ MAKING BARBER SPECIFIC REQESUTSbarber_id
+barber_id = get_barber_id()
+pin_entered = st.text_input("Enter PIN:", type="password")
+stored_pin = db.reference(f"barbers/{barber_id}/pin").get()
+
+if pin_entered == stored_pin:
+    st.success("Access granted ✅")
+    queue_ref = db.reference(f"barbers/{barber_id}/queue")
+    queue_data = queue_ref.get() or {}
+
+    for key, entry in queue_data.items():
+        st.write(f"{entry['name']}")
+        if st.button(f"Remove {entry['name']}", key=key):
+            queue_ref.child(key).delete()
+else:
+    st.warning("Enter correct PIN to manage this barber’s queue.")
+
+
 # --- Handle barber ID from URL ---
 query_params = st.query_params
 barber_id = query_params.get("barber", "default_barber")
