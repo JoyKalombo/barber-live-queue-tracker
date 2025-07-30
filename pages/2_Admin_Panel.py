@@ -11,91 +11,78 @@ from io import StringIO
 from utils.firebase_utils import get_barber_config
 from utils.session import get_barber_id
 
-# ✅ MAKING BARBER SPECIFIC REQESUTSbarber_id
-barber_id = get_barber_id()
-pin_entered = st.text_input("Enter PIN:", type="password")
-stored_pin = db.reference(f"barbers/{barber_id}/pin").get()
+# --- Page Config ---
+st.set_page_config(page_title="Admin Panel", layout="wide")
 
-if pin_entered == stored_pin:
-    st.success("Access granted ✅")
-    queue_ref = db.reference(f"barbers/{barber_id}/queue")
-    queue_data = queue_ref.get() or {}
-
-    for key, entry in queue_data.items():
-        st.write(f"{entry['name']}")
-        if st.button(f"Remove {entry['name']}", key=key):
-            queue_ref.child(key).delete()
-else:
-    st.warning("Enter correct PIN to manage this barber’s queue.")
-
-
-# --- Handle barber ID from URL ---
-query_params = st.query_params
-barber_id = query_params.get("barber", "default_barber")
-
-# Load the barber config
-config = get_barber_config(barber_id)
-
-# --- Firebase init ---
+# --- Init Firebase (once) ---
 if not firebase_admin._apps:
     cred = credentials.Certificate(json.loads(st.secrets["firebase_creds"]))
     firebase_admin.initialize_app(cred, {'databaseURL': st.secrets["firebase_db_url"]})
 
-walkin_ref = db.reference("walkins")
-booking_ref = db.reference("bookings")
-avg_cut_duration = 25  # in minutes
+# --- Get barber_id from query string ---
+query_params = st.query_params
+barber_id = query_params.get("barber", "default_barber")
+
+# --- Load barber config ---
+config = get_barber_config(barber_id)
+
+# --- Firebase Refs for this barber ---
+walkin_ref = db.reference(f"barbers/{barber_id}/walkins")
+booking_ref = db.reference(f"barbers/{barber_id}/bookings")
+pin_ref = db.reference(f"barbers/{barber_id}/pin")
+
+avg_cut_duration = 25
 now = datetime.now(ZoneInfo("Europe/London"))
-open_time = datetime.now(ZoneInfo("Europe/London")).replace(hour=10, minute=0, second=0, microsecond=0)
+open_time = now.replace(hour=10, minute=0, second=0, microsecond=0)
 
-st.set_page_config(page_title="Admin Panel", layout="wide")
+# --- PIN Login Check ---
+st.title(f"🔐 Admin Panel – {barber_id.replace('_', ' ').title()}")
 
-# --- Session state login ---
 if "is_admin" not in st.session_state:
     st.session_state["is_admin"] = False
 
+stored_pin = pin_ref.get()
+
 if not st.session_state["is_admin"]:
-    st.title("🔐 Admin Login")
     entered_pin = st.text_input("Enter Admin PIN:", type="password")
     if st.button("Login"):
-        if entered_pin == st.secrets.get("admin_pin", "4321"):
+        if entered_pin == stored_pin:
             st.session_state["is_admin"] = True
+            st.success("✅ Access granted.")
             st.rerun()
         else:
             st.error("❌ Incorrect PIN.")
     st.stop()
 
-# --- Admin interface ---
-st.title("💈 Barber Admin Panel")
-
 if st.button("🚪 Logout"):
     st.session_state["is_admin"] = False
     st.rerun()
 
-# --- Pull from Firebase ---
+# --- Queue Display ---
+st.subheader("📋 Current Queue")
+
 walkins = walkin_ref.get() or {}
 bookings = booking_ref.get() or {}
 
-# --- Sort both ---
+# Sort both
 sorted_walkins = sorted(walkins.items(), key=lambda x: x[1]["joined_at"])
 sorted_bookings = sorted(bookings.items(), key=lambda x: x[1]["slot"])
 
-# --- Create unified queue list with estimated start times ---
 queue = []
-
-# Add walk-ins with calculated time
 used_slots = []
 
-# Add booking time slots to used list
+# Add booking slots
 for _, booking in sorted_bookings:
-    start = datetime.fromisoformat(booking["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
-    end = start + timedelta(minutes=avg_cut_duration)
-    used_slots.append((start, end))
+    try:
+        start = datetime.fromisoformat(booking["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
+        end = start + timedelta(minutes=avg_cut_duration)
+        used_slots.append((start, end))
+    except Exception:
+        continue
 
-# Dynamically assign walk-in slots avoiding clashes
+# Assign walk-ins dynamically
 walkin_time = max(now, open_time)
-
 for _, walkin in sorted_walkins:
-    # Find the next time that doesn’t clash
     while any(start <= walkin_time < end for start, end in used_slots):
         walkin_time += timedelta(minutes=avg_cut_duration)
 
@@ -109,85 +96,76 @@ for _, walkin in sorted_walkins:
         "start": estimated_start
     })
 
-    walkin_time = estimated_end  # move forward
+    walkin_time = estimated_end
 
-# Add bookings with actual slot time
-for _, person in sorted_bookings:
+# Add bookings
+for _, booking in sorted_bookings:
     try:
-        slot_time = datetime.fromisoformat(person["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
+        start = datetime.fromisoformat(booking["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
         queue.append({
-            "name": person["name"],
+            "name": booking["name"],
             "source": "booking",
-            "start": slot_time
+            "start": start
         })
-    except Exception as e:
-        st.warning(f"⚠️ Skipped booking for {person.get('name', 'Unknown')} due to invalid time format.")
+    except Exception:
+        continue
 
-# Filter out any entries missing start times
-queue = [entry for entry in queue if entry.get("start") is not None]
-# --- Sort unified queue by start time ---
 queue_sorted = sorted(queue, key=lambda x: x["start"])
 
-# --- Queue Display ---
-st.subheader("🧑🏿‍🦱 Queue Overview (Walk-ins + Bookings)")
-
+# --- Display Queue ---
 if queue_sorted:
     for i, person in enumerate(queue_sorted):
         wait_mins = int((person["start"] - now).total_seconds() / 60)
-        end_time = person["start"] + timedelta(minutes=avg_cut_duration)
+        end = person["start"] + timedelta(minutes=avg_cut_duration)
 
         col1, col2 = st.columns([5, 1])
         with col1:
             st.markdown(
-                f"### {i + 1}. {person['name']} ({'Booking' if person['source'] == 'booking' else 'Walk-in'})  \n"
-                f"🕒 Wait: {max(wait_mins, 0)} mins  \n"
-                f"📅 Est: {person['start'].strftime('%H:%M')} – {end_time.strftime('%H:%M')}"
+                f"### {i+1}. {person['name']} ({person['source'].title()})\n"
+                f"🕒 Wait: {max(0, wait_mins)} mins  \n"
+                f"📅 Est: {person['start'].strftime('%H:%M')} – {end.strftime('%H:%M')}"
             )
         with col2:
             if st.button("✅ Done", key=f"remove_{i}"):
-                # Remove from appropriate Firebase reference
-                if person["source"] == "walkin":
-                    # Find and delete walk-in
-                    for key, p in walkins.items():
-                        if p["name"] == person["name"]:
-                            walkin_ref.child(key).delete()
-                            break
-                else:
-                    # Find and delete booking
-                    for key, p in bookings.items():
-                        if p["name"] == person["name"] and p["slot"] == person["start"].isoformat():
-                            booking_ref.child(key).delete()
-                            break
-                st.rerun()
+                ref_to_edit = walkin_ref if person["source"] == "walkin" else booking_ref
+                entries = walkins if person["source"] == "walkin" else bookings
 
+                for key, entry in entries.items():
+                    if entry.get("name") == person["name"]:
+                        if person["source"] == "booking":
+                            if entry.get("slot") != person["start"].isoformat():
+                                continue
+                        ref_to_edit.child(key).delete()
+                        break
+                st.rerun()
 else:
     st.info("No one is in the queue yet.")
 
-# --- CSV Export Section ---
+# --- Export CSV ---
 st.divider()
 st.subheader("📁 Export Logs")
 
 if st.button("⬇️ Export Today's Log as CSV"):
     try:
-        date_today = datetime.now().strftime("%Y-%m-%d")
+        date_today = now.strftime("%Y-%m-%d")
         log_ref = db.reference(f"logs/{date_today}")
         logs = log_ref.get()
 
         if logs:
-            df_logs = pd.DataFrame.from_dict(logs, orient="index")
-            df_logs["joined_at"] = pd.to_datetime(df_logs["joined_at"])
-            df_logs = df_logs.sort_values("joined_at")
-            df_logs["joined_at"] = df_logs["joined_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
+            df = pd.DataFrame.from_dict(logs, orient="index")
+            df["joined_at"] = pd.to_datetime(df["joined_at"])
+            df = df.sort_values("joined_at")
+            df["joined_at"] = df["joined_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
-            csv_buffer = StringIO()
-            df_logs.to_csv(csv_buffer, index=False)
+            buffer = StringIO()
+            df.to_csv(buffer, index=False)
             st.download_button(
                 label="📥 Download CSV",
-                data=csv_buffer.getvalue(),
-                file_name=f"queue_log_{date_today}.csv",
+                data=buffer.getvalue(),
+                file_name=f"queue_log_{barber_id}_{date_today}.csv",
                 mime="text/csv"
             )
         else:
             st.info("ℹ️ No logs found for today.")
     except Exception as e:
-        st.error(f"⚠️ Failed to export logs: {str(e)}")
+        st.error(f"⚠️ Failed to export logs: {e}")
