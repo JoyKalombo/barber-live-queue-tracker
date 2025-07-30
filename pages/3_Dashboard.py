@@ -29,8 +29,8 @@ config = get_barber_config(barber_id)
 # --- Barber-specific Refs ---
 queue_ref = db.reference(f"barbers/{barber_id}/queue")
 bookings_ref = db.reference(f"barbers/{barber_id}/bookings")
-walkin_log_ref = db.reference("walkins")
-booking_log_ref = db.reference("bookings")
+walkin_log_ref = db.reference(f"barbers/{barber_id}/walkins_log")
+booking_log_ref = db.reference(f"barbers/{barber_id}/bookings_log")
 
 # --- Realtime metrics ---
 queue_data = queue_ref.get() or {}
