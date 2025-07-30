@@ -6,44 +6,66 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from streamlit_autorefresh import st_autorefresh
 
+from utils.firebase_utils import get_barber_config
+
+# Load the barber config
+barber_id = st.query_params.get("barber", "default_barber")  # fallback to "default_barber"
+config = get_barber_config(barber_id)
+
+shop_name = config.get("shop_name", "Unknown Barber")
+open_hour = config.get("open_hour", 10)
+close_hour = config.get("close_hour", 22)
+avg_cut_duration = config.get("avg_cut_duration", 25)
+logo_url = config.get("logo_url")
+
 # --- Firebase init (singleton) ---
 if not firebase_admin._apps:
     cred = credentials.Certificate(json.loads(st.secrets["firebase_creds"]))
     firebase_admin.initialize_app(cred, {'databaseURL': st.secrets["firebase_db_url"]})
 
-walkin_ref = db.reference("walkins")
-booking_ref = db.reference("bookings")
-avg_cut_duration = 25  # in minutes
-open_time = datetime.now().replace(hour=10, minute=0, second=0, microsecond=0)
-close_time = datetime.now().replace(hour=22, minute=0, second=0, microsecond=0)
+# --- Handle barber ID from URL ---
+query_params = st.experimental_get_query_params()
+barber_id = query_params.get("barber_id", ["default_barber"])[0]
 
+# --- Firebase References ---
+walkin_ref = db.reference(f"barbers/{barber_id}/walkins")
+booking_ref = db.reference(f"barbers/{barber_id}/bookings")
+settings_ref = db.reference(f"barbers/{barber_id}/settings")
+
+settings = settings_ref.get() or {}
+avg_cut_duration = settings.get("avg_cut_duration", 25)
+open_hour = settings.get("open_hour", 10)
+close_hour = settings.get("close_hour", 22)
+shop_name = settings.get("shop_name", "the barbershop")
+logo_url = settings.get("logo_url")
+
+# --- Page Setup ---
 st.set_page_config(page_title="Book Appointment", layout="centered")
-st.title("📅 Book an Appointment")
 
-# Show success message if booking just happened
+if logo_url:
+    st.image(logo_url, width=180)
+
+st.title(f"📅 Book with {shop_name}")
+
+# --- Confirmation Banner ---
 if "booking_confirmation" in st.session_state:
     booking = st.session_state["booking_confirmation"]
     dt = datetime.fromisoformat(booking["datetime"]).astimezone(ZoneInfo("Europe/London"))
     formatted_dt = dt.strftime("%A %d %B at %I:%M %p")
     st.success(f"✅ {booking['name']}, your booking is confirmed for {formatted_dt}.")
 
-# Showcasing the current date and time
-today = datetime.now().date()
+# --- Timezone & Date Setup ---
+tz = ZoneInfo("Europe/London")
+now = datetime.now(tz).replace(second=0, microsecond=0)
+today = now.date()
 
-# --- Booking Form ---
 st.subheader("🗓️ Select Date for Booking")
 selected_date = st.date_input("Pick a date:", min_value=today)
 
-# Only show time slots if a date is selected
+# --- Continue if date selected ---
 if selected_date:
-    # Recalculate today's current time without seconds/milliseconds
-    tz = ZoneInfo("Europe/London")
-    now = datetime.now(tz).replace(second=0, microsecond=0)
-
-    # Adjust open/close time for selected day
-    tz = ZoneInfo("Europe/London")
-    open_time = datetime.combine(selected_date, datetime.min.time(), tzinfo=tz).replace(hour=10)
-    close_time = datetime.combine(selected_date, datetime.min.time(), tzinfo=tz).replace(hour=22)
+    open_time = datetime.combine(selected_date, datetime.min.time(), tzinfo=tz).replace(hour=open_hour)
+    close_time = datetime.combine(selected_date, datetime.min.time(), tzinfo=tz).replace(hour=close_hour)
 
     walkins = walkin_ref.get() or {}
     bookings = booking_ref.get() or {}
@@ -61,37 +83,41 @@ if selected_date:
     # --- Generate blocked time ranges ---
     blocked_slots = []
 
-    # Block out walk-ins only if selected_date is today
+    # Block walk-ins (only if date is today)
     if selected_date == today:
         walkin_queue = [
             datetime.fromisoformat(v["joined_at"]).replace(tzinfo=tz)
-            for k, v in sorted_walkins
-            if "joined_at" in v and datetime.fromisoformat(v["joined_at"]).date() == selected_date
+            for _, v in sorted_walkins
+            if datetime.fromisoformat(v["joined_at"]).date() == today
         ]
-
-        # Start from open_time or now (whichever is later)
         walkin_start = max(open_time, now)
         for _ in walkin_queue:
             blocked_slots.append((walkin_start, walkin_start + timedelta(minutes=avg_cut_duration)))
             walkin_start += timedelta(minutes=avg_cut_duration)
 
-    # Block out bookings on selected date
+    # Block existing bookings
     for _, b in sorted_bookings:
-        slot_dt = datetime.fromisoformat(b["slot"]).replace(tzinfo=ZoneInfo("Europe/London"))
+        slot_dt = datetime.fromisoformat(b["slot"]).replace(tzinfo=tz)
         if slot_dt.date() == selected_date:
             blocked_slots.append((slot_dt, slot_dt + timedelta(minutes=avg_cut_duration)))
 
-    # --- Generate available slots ---
+    # --- Calculate available slots ---
     available_slots = []
     slot = open_time
     while slot + timedelta(minutes=avg_cut_duration) <= close_time:
         if selected_date == today and slot < now:
             slot += timedelta(minutes=avg_cut_duration)
             continue
-        overlap = any(bs <= slot < be or (slot <= bs < slot + timedelta(minutes=avg_cut_duration))
-                      for bs, be in blocked_slots)
+
+        overlap = any(
+            bs <= slot < be or
+            (slot <= bs < slot + timedelta(minutes=avg_cut_duration))
+            for bs, be in blocked_slots
+        )
+
         if not overlap:
             available_slots.append(slot)
+
         slot += timedelta(minutes=avg_cut_duration)
 
     # --- Booking Form ---
@@ -107,7 +133,6 @@ if selected_date:
             if submit and name.strip():
                 selected_time = next(s for s in available_slots if s.strftime('%H:%M') == chosen_slot)
 
-                # Save to Firebase
                 booking_ref.push({
                     "name": name.strip().title(),
                     "slot": selected_time.isoformat()
