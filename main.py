@@ -60,17 +60,17 @@ if selected_barber:
     with col1:
         if st.button("🖥️ Kiosk View"):
             st.query_params["barber"] = selected_barber
-            st.switch_page("1_Kiosk_View")
+            st.switch_page("pages/1_Kiosk_View.py")
 
         if st.button("📊 Dashboard"):
             st.query_params["barber"] = selected_barber
-            st.switch_page("3_Dashboard")
+            st.switch_page("pages/3_Dashboard.py")
 
     with col2:
         if st.button("🔐 Admin Panel"):
             st.query_params["barber"] = selected_barber
-            st.switch_page("2_Admin_Panel")
+            st.switch_page("pages/2_Admin_Panel.py")
 
         if st.button("📅 Book Appointment"):
             st.query_params["barber"] = selected_barber
-            st.switch_page("4_Book_Appointment")
+            st.switch_page("pages/4_Book_Appointment.py")
