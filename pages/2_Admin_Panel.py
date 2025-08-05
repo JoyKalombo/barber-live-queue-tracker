@@ -29,7 +29,7 @@ config = get_barber_config(barber_id)
 # --- Firebase Refs for this barber ---
 walkin_ref = db.reference(f"barbers/{barber_id}/walkins")
 booking_ref = db.reference(f"barbers/{barber_id}/bookings")
-pin_ref = db.reference(f"barbers/{barber_id}/pin")
+pin_ref = db.reference(f"barbers/{barber_id}/config/admin_pin")
 
 avg_cut_duration = 25
 now = datetime.now(ZoneInfo("Europe/London"))
