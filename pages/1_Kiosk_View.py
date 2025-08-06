@@ -14,6 +14,7 @@ st.set_page_config(page_title="Kiosk View", layout="wide")
 query_params = st.query_params
 barber_id = query_params.get("barber", "default_barber")  # fallback
 config = get_barber_config(barber_id)
+st.info(f"Barber ID: {barber_id}")
 
 # --- Firebase init (singleton) ---
 if not firebase_admin._apps:

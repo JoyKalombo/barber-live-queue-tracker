@@ -26,6 +26,8 @@ barber_id = query_params.get("barber", get_barber_id()) or "default_barber"
 # --- Load config ---
 config = get_barber_config(barber_id)
 
+st.info(f"Barber ID: {barber_id}")
+
 # --- Barber-specific Refs ---
 queue_ref = db.reference(f"barbers/{barber_id}/queue")
 bookings_ref = db.reference(f"barbers/{barber_id}/bookings")

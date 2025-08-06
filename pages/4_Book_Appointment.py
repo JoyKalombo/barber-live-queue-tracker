@@ -12,6 +12,7 @@ from utils.session import get_barber_id
 # --- Handle barber ID from URL ---
 query_params = st.query_params
 barber_id = query_params.get("barber", "default_barber")
+st.info(f"Barber ID: {barber_id}")
 
 # --- Firebase init ---
 if not firebase_admin._apps:

@@ -26,6 +26,8 @@ barber_id = query_params.get("barber", "default_barber")
 # --- Load barber config ---
 config = get_barber_config(barber_id)
 
+st.info(f"Barber ID: {barber_id}")
+
 # --- Firebase Refs for this barber ---
 walkin_ref = db.reference(f"barbers/{barber_id}/walkins")
 booking_ref = db.reference(f"barbers/{barber_id}/bookings")
