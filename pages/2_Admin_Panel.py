@@ -40,16 +40,17 @@ open_time = now.replace(hour=10, minute=0, second=0, microsecond=0)
 # --- PIN Login Check ---
 st.title(f"🔐 Admin Panel – {barber_id.replace('_', ' ').title()}")
 
-if "is_admin" not in st.session_state:
-    st.session_state["is_admin"] = False
+admin_key = f"is_admin_{barber_id}"
+if admin_key not in st.session_state:
+    st.session_state[admin_key] = False
 
 stored_pin = pin_ref.get()
 
-if not st.session_state["is_admin"]:
+if not st.session_state[admin_key]:
     entered_pin = st.text_input("Enter Admin PIN:", type="password")
     if st.button("Login"):
         if entered_pin == stored_pin:
-            st.session_state["is_admin"] = True
+            st.session_state[admin_key] = True
             st.success("✅ Access granted.")
             st.rerun()
         else:
@@ -57,8 +58,10 @@ if not st.session_state["is_admin"]:
     st.stop()
 
 if st.button("🚪 Logout"):
-    st.session_state["is_admin"] = False
+    st.session_state[admin_key] = False
     st.rerun()
+
+st.write("Session State:", st.session_state)
 
 # --- Queue Display ---
 st.subheader("📋 Current Queue")
