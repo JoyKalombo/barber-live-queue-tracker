@@ -181,29 +181,42 @@ if st.button("⬇️ Export Today's Log as CSV"):
 st.divider()
 st.subheader("📅 Booking Calendar")
 
-# 🔐 Only show if admin is logged in
-if st.session_state.get("is_admin"):
+# Use the same per-barber session key you set on login
+is_admin = st.session_state.get(f"is_admin_{barber_id}", False)
 
-    # --- Fetch bookings from Firebase ---
-    bookings = booking_ref.get() or {}
+if is_admin:
+    # Fetch bookings
+    raw_bookings = booking_ref.get() or {}
 
-    # --- Convert to calendar format ---
+    st.json(raw_bookings)
+
+    # Build FullCalendar events
     events = []
-    for _, booking in bookings.items():
+    for _, booking in (raw_bookings.items() if isinstance(raw_bookings, dict) else []):
+        slot = booking.get("slot")
+        name = booking.get("name", "Booking")
+        if not slot:
+            continue
         try:
-            start = datetime.datetime.fromisoformat(booking["slot"])
-            end = start + datetime.timedelta(minutes=avg_cut_duration)
+            dt = datetime.fromisoformat(slot)
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=ZoneInfo("Europe/London"))
+            end = dt + timedelta(minutes=avg_cut_duration)
             events.append({
-                "title": booking["name"],
-                "start": start.isoformat(),
+                "title": name,
+                "start": dt.isoformat(),
                 "end": end.isoformat(),
             })
         except Exception as e:
-            st.warning(f"Error parsing booking: {e}")
-            continue
+            st.warning(f"Skipping bad slot '{slot}': {e}")
 
+    # Debug line so you can see event count in the UI
+    st.caption(f"Calendar debug: prepared {len(events)} events for {barber_id}")
+
+    # Render with streamlit-calendar
     calendar_options = {
-        "initialView": "timeGridDay",
+        "initialView": "timeGridWeek",
+        "timeZone": "Europe/London",
         "headerToolbar": {
             "left": "prev,next today",
             "center": "title",
@@ -211,9 +224,13 @@ if st.session_state.get("is_admin"):
         },
         "slotMinTime": "08:00:00",
         "slotMaxTime": "22:00:00",
+        "height": 780,
+        "nowIndicator": True,
     }
 
     selected_event = calendar(events=events, options=calendar_options)
 
     if selected_event:
-        st.info(f"📌 You clicked: {selected_event['title']}")
+        st.info(f"📌 You clicked: {selected_event.get('title')}")
+else:
+    st.info("Log in with the correct PIN to see the calendar.")
