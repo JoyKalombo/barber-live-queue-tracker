@@ -13,7 +13,7 @@ if logo := config.get("logo_url", ""):
 
 with st.expander("ℹ️ What does each option do?"):
     st.markdown(f"""
-    This app helps manage both **walk-ins** and **booked appointments** seamlessly at **{shop_name}**.
+    This app helps manage both **walk-ins** and **booked appointments** seamlessly at **{barber_id}**.
 
     ### 🖥️ Kiosk View *(Public Display)*
     - 🧍🏾 Join the queue as a walk-in  
