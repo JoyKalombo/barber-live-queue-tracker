@@ -7,6 +7,7 @@ from zoneinfo import ZoneInfo
 from streamlit_autorefresh import st_autorefresh
 import pandas as pd
 from io import StringIO
+from streamlit_calendar import calendar
 
 from utils.firebase_utils import get_barber_config
 from utils.session import get_barber_id
@@ -174,3 +175,45 @@ if st.button("⬇️ Export Today's Log as CSV"):
             st.info("ℹ️ No logs found for today.")
     except Exception as e:
         st.error(f"⚠️ Failed to export logs: {e}")
+
+
+# --- Calendar View ---
+st.divider()
+st.subheader("📅 Booking Calendar")
+
+# 🔐 Only show if admin is logged in
+if st.session_state.get("is_admin"):
+
+    # --- Fetch bookings from Firebase ---
+    bookings = booking_ref.get() or {}
+
+    # --- Convert to calendar format ---
+    events = []
+    for _, booking in bookings.items():
+        try:
+            start = datetime.datetime.fromisoformat(booking["slot"])
+            end = start + datetime.timedelta(minutes=avg_cut_duration)
+            events.append({
+                "title": booking["name"],
+                "start": start.isoformat(),
+                "end": end.isoformat(),
+            })
+        except Exception as e:
+            st.warning(f"Error parsing booking: {e}")
+            continue
+
+    calendar_options = {
+        "initialView": "timeGridDay",
+        "headerToolbar": {
+            "left": "prev,next today",
+            "center": "title",
+            "right": "timeGridDay,timeGridWeek,dayGridMonth",
+        },
+        "slotMinTime": "08:00:00",
+        "slotMaxTime": "22:00:00",
+    }
+
+    selected_event = calendar(events=events, options=calendar_options)
+
+    if selected_event:
+        st.info(f"📌 You clicked: {selected_event['title']}")

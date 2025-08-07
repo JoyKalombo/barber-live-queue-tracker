@@ -6,3 +6,4 @@ pandas
 matplotlib
 plotly
 python-dateutil
+streamlit-calendar
