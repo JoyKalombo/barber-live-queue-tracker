@@ -61,7 +61,7 @@ if st.button("🚪 Logout"):
     st.session_state[admin_key] = False
     st.rerun()
 
-st.write("Session State:", st.session_state)
+# st.write("Session State:", st.session_state) - "code to check session state (ideally per barber rather than globally)"
 
 # --- Queue Display ---
 st.subheader("📋 Current Queue")
