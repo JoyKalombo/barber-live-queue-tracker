@@ -3,6 +3,8 @@ import firebase_admin
 from firebase_admin import credentials, db
 import json
 import streamlit as st
+import re
+from datetime import datetime
 
 # Initialise Firebase if not already done
 if not firebase_admin._apps:
@@ -55,3 +57,26 @@ def create_new_barber(barber_id: str):
 
     print(f"✅ Barber '{barber_id}' created successfully.")
     return True
+
+
+def is_valid_uk_phone(phone):
+    """Check if phone is a valid UK mobile number (e.g. 07912345678)"""
+    return re.fullmatch(r"07\d{9}", phone) is not None
+
+
+def push_booking(barber_id, name, phone, slot_datetime):
+    """
+    Pushes a new booking to Firebase under the given barber's node.
+    Validates UK phone format before pushing.
+    """
+    if not is_valid_uk_phone(phone):
+        raise ValueError("Invalid phone number. Must start with '07' and be 11 digits.")
+
+    slot_str = slot_datetime.isoformat()
+    booking_data = {
+        "name": name.strip(),
+        "phone": phone.strip(),
+        "slot": slot_str
+    }
+
+    db.reference(f"barbers/{barber_id}/bookings").push(booking_data)
