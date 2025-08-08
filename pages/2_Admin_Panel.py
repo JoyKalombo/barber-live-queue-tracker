@@ -235,31 +235,3 @@ if is_admin:
 else:
     st.info("Log in with the correct PIN to see the calendar.")
 
-# --- Export CSV ---
-st.divider()
-st.subheader("📁 Export Logs")
-
-if st.button("⬇️ Export Today's Log as CSV"):
-    try:
-        date_today = now.strftime("%Y-%m-%d")
-        log_ref = db.reference(f"logs/{date_today}")
-        logs = log_ref.get()
-
-        if logs:
-            df = pd.DataFrame.from_dict(logs, orient="index")
-            df["joined_at"] = pd.to_datetime(df["joined_at"])
-            df = df.sort_values("joined_at")
-            df["joined_at"] = df["joined_at"].dt.strftime("%Y-%m-%d %H:%M:%S")
-
-            buffer = StringIO()
-            df.to_csv(buffer, index=False)
-            st.download_button(
-                label="📥 Download CSV",
-                data=buffer.getvalue(),
-                file_name=f"queue_log_{barber_id}_{date_today}.csv",
-                mime="text/csv"
-            )
-        else:
-            st.info("ℹ️ No logs found for today.")
-    except Exception as e:
-        st.error(f"⚠️ Failed to export logs: {e}")
