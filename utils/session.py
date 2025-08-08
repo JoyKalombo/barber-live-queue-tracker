@@ -1,33 +1,41 @@
 # utils/session.py
 import streamlit as st
 
-# utils/session.py
-from utils.firebase_utils import get_barber_config
-
-
-def get_barber_id(default="default_barber"):
-    barber = st.query_params.get("barber")
-    if not barber:
-        st.warning("⚠️ No barber selected. Returning to default.")
-        return default
-    return barber
-
-
-def get_barber_context(default="default_barber"):
-    barber_id = st.query_params.get("barber", default)
-    config = get_barber_config(barber_id)
-    return barber_id, config
-
-
-_KEY = "barber_id"
+BARBER_KEY = "barber_id"
 
 
 def set_barber_id(barber_id: str) -> None:
-    st.session_state[_KEY] = barber_id
-    # set URL param too (new API, not experimental)
-    st.query_params["barber"] = barber_id
+    """Persist barber_id in both session state and the URL query string."""
+    st.session_state[BARBER_KEY] = barber_id
+    st.query_params["barber"] = barber_id  # write to URL
 
 
 def get_barber_id(default: str = "default_barber") -> str:
-    # URL wins, then session, then default
-    return st.query_params.get("barber", st.session_state.get(_KEY, default))
+    """
+    Resolve the current barber_id, preferring the URL (?barber=...),
+    then session_state, and keeping them in sync. Falls back to default.
+    """
+    # Prefer URL
+    barber_from_url = st.query_params.get("barber")
+    if barber_from_url:
+        st.session_state[BARBER_KEY] = barber_from_url  # keep session in sync
+        return barber_from_url
+
+    # Else try session
+    barber_from_session = st.session_state.get(BARBER_KEY)
+    if barber_from_session:
+        st.query_params["barber"] = barber_from_session  # keep URL in sync
+        return barber_from_session
+
+    # Else default and sync both
+    st.session_state[BARBER_KEY] = default
+    st.query_params["barber"] = default
+    return default
+
+
+def get_barber_context(default: str = "default_barber"):
+    """Return (barber_id, config) for the current barber."""
+    # Import here to avoid circular imports at module load time
+    from utils.firebase_utils import get_barber_config
+    barber_id = get_barber_id(default)
+    return barber_id, get_barber_config(barber_id)
