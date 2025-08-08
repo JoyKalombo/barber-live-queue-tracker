@@ -22,9 +22,6 @@ if not firebase_admin._apps:
     cred = credentials.Certificate(json.loads(st.secrets["firebase_creds"]))
     firebase_admin.initialize_app(cred, {'databaseURL': st.secrets["firebase_db_url"]})
 
-# --- Determine barber ID ---
-query_params = st.query_params
-barber_id = query_params.get("barber", get_barber_id()) or "default_barber"
 
 # --- Load config ---
 config = get_barber_config(barber_id)

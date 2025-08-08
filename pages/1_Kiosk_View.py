@@ -8,14 +8,13 @@ from streamlit_autorefresh import st_autorefresh
 from utils.firebase_utils import get_barber_config
 from utils.session import get_barber_id
 
-barber_id = get_barber_id()
 
 # --- Page config ---
 st.set_page_config(page_title="Kiosk View", layout="wide")
 
 # --- Get barber ID from query params ---
 query_params = st.query_params
-barber_id = query_params.get("barber", "default_barber")  # fallback
+barber_id = get_barber_id()
 config = get_barber_config(barber_id)
 st.info(f"Barber ID: {barber_id}")
 

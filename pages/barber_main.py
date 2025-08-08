@@ -4,7 +4,7 @@ from utils.session import get_barber_id, set_barber_id
 
 st.set_page_config(page_title="Barber Portal", layout="centered")
 
-barber_id = st.query_params.get("barber", "default_barber")
+barber_id = get_barber_id()
 config = get_barber_config(barber_id)
 
 st.title(f"💈 {config.get('shop_name', barber_id.replace('_', ' ').title())}")
