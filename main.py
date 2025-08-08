@@ -11,6 +11,5 @@ barber_ids = get_all_barber_ids()
 selected = st.selectbox("Barber:", barber_ids)
 
 if selected and st.button("Go to Barber Portal"):
-    set_barber_id(selected)
-    st.switch_page(f"pages/barber_main.py?barber={selected}")
-
+    set_barber_id(selected)  # sets both session + URL param
+    st.switch_page(f"pages/barber_main.py?barber={selected}")  # preserve barber in URL
