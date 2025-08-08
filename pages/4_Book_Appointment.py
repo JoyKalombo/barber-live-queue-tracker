@@ -10,11 +10,15 @@ from streamlit_autorefresh import st_autorefresh
 from utils.firebase_utils import get_barber_config
 from utils.session import get_barber_id
 
+barber_id = get_barber_id()
+
 # --- Helpers ---
 UK_MOBILE_RE = re.compile(r"^07\d{9}$")
 
+
 def is_valid_uk_mobile(phone: str) -> bool:
     return bool(UK_MOBILE_RE.fullmatch(phone.strip()))
+
 
 def to_e164_uk(phone: str) -> str:
     """Convert 07xxxxxxxxx -> +447xxxxxxxxx (simple UK-only normalizer)."""
@@ -24,6 +28,7 @@ def to_e164_uk(phone: str) -> str:
     if p.startswith("07") and len(p) == 11:
         return "+44" + p[1:]
     return p  # fallback (won't pass validation if wrong)
+
 
 # --- Handle barber ID from URL ---
 query_params = st.query_params
@@ -180,8 +185,8 @@ if selected_date:
                     "name": name.strip().title(),
                     "phone_local": phone.strip(),
                     "phone_e164": to_e164_uk(phone),
-                    "slot": selected_time.isoformat(),           # tz-aware ISO8601
-                    "created_at": now.isoformat(),               # tz-aware
+                    "slot": selected_time.isoformat(),  # tz-aware ISO8601
+                    "created_at": now.isoformat(),  # tz-aware
                     "status": "confirmed",
                     "source": "self_service",
                 })

@@ -10,6 +10,9 @@ import plotly.express as px
 from utils.firebase_utils import get_barber_config
 from utils.session import get_barber_id
 
+barber_id = get_barber_id()
+
+
 # --- Page config ---
 st.set_page_config(page_title="Barber Dashboard", layout="wide")
 st.title("📊 Barber Dashboard")

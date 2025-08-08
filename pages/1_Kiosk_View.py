@@ -6,6 +6,9 @@ from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 from streamlit_autorefresh import st_autorefresh
 from utils.firebase_utils import get_barber_config
+from utils.session import get_barber_id
+
+barber_id = get_barber_id()
 
 # --- Page config ---
 st.set_page_config(page_title="Kiosk View", layout="wide")
