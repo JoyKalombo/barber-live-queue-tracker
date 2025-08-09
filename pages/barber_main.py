@@ -4,8 +4,15 @@ from utils.session import get_barber_id, set_barber_id
 
 st.set_page_config(page_title="Barber Portal", layout="centered")
 
+# Retrieve the selected barber ID from session
 barber_id = get_barber_id()
+
+# Debugging line to check if the barber_id is retrieved correctly
+st.write(f"Current Barber ID: {barber_id}")  # Debugging line
+
+# Fetch barber's config from Firebase
 config = get_barber_config(barber_id)
+
 
 st.title(f"💈 {config.get('shop_name', barber_id.replace('_', ' ').title())}")
 

@@ -4,36 +4,37 @@ BARBER_KEY = "barber_id"
 
 
 def set_barber_id(barber_id: str) -> None:
-    """Persist barber_id in both session state and URL query string."""
+    """Persist barber_id in session; URL can be synced later."""
     st.session_state[BARBER_KEY] = barber_id
-    st.query_params["barber"] = barber_id  # ensure it's in the URL
+    st.write(f"Barber ID set to: {st.session_state[BARBER_KEY]}")  # Debugging line
 
 
 def get_barber_id(default: str = "default_barber") -> str:
     """
-    Resolve the current barber_id, preferring the URL (?barber=...),
-    then session_state, keeping them in sync. Falls back to default.
+    Prefer session (since switch_page clears the URL),
+    then URL if present, then default. After resolving,
+    sync the URL so refresh/share still works.
     """
-    # Prefer URL
+    # 1) Prefer session (most reliable across switch_page)
+    if BARBER_KEY in st.session_state and st.session_state[BARBER_KEY]:
+        current = st.session_state[BARBER_KEY]
+        # keep URL in sync
+        try:
+            st.query_params["barber"] = current
+        except Exception:
+            pass
+        return current
+
+    # 2) Else try URL
     barber_from_url = st.query_params.get("barber")
     if barber_from_url:
         st.session_state[BARBER_KEY] = barber_from_url
         return barber_from_url
 
-    # Else try session
-    barber_from_session = st.session_state.get(BARBER_KEY)
-    if barber_from_session:
-        st.query_params["barber"] = barber_from_session
-        return barber_from_session
-
-    # Else default
+    # 3) Fallback to default and sync both
     st.session_state[BARBER_KEY] = default
-    st.query_params["barber"] = default
+    try:
+        st.query_params["barber"] = default
+    except Exception:
+        pass
     return default
-
-
-def get_barber_context(default: str = "default_barber"):
-    """Return (barber_id, config) for the current barber."""
-    from utils.firebase_utils import get_barber_config
-    barber_id = get_barber_id(default)
-    return barber_id, get_barber_config(barber_id)
