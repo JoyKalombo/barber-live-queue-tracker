@@ -16,7 +16,9 @@ if not firebase_admin._apps:
 
 def get_barber_config(barber_id: str = "default_barber") -> dict:
     ref = db.reference(f"barbers/{barber_id}/settings")
-    return ref.get() or {}
+    config = ref.get() or {}
+    st.write(f"DEBUG: Fetched barber config for {barber_id}: {config}")  # Debugging line
+    return config
 
 
 def get_all_barber_ids() -> list:
