@@ -8,7 +8,7 @@ st.set_page_config(page_title="Barber Portal", layout="centered")
 barber_id = get_barber_id()
 
 # Debugging line to check if the barber_id is retrieved correctly
-st.write(f"Current Barber ID: {barber_id}")  # Debugging line
+#st.write(f"Current Barber ID: {barber_id}")  # Debugging line
 
 # Fetch barber's config from Firebase
 config = get_barber_config(barber_id)
